@@ -21,7 +21,14 @@ function objcon_wrapper(status::Int32, n::Int32, x_::Ptr{Cdouble},
     # x = unsafe_load(x_)  # TODO: test this
 
     # call function
-    J, c, fail = objcon(x)
+    res = objcon(x)
+    if length(res) == 3
+        J, c, fail = res
+        gradprovided = false
+    else
+        J, c, gJ, gc, fail = res
+        gradprovided = true
+    end
 
     # copy obj and con values into C pointer
     unsafe_store!(f_, J, 1)
@@ -29,16 +36,28 @@ function objcon_wrapper(status::Int32, n::Int32, x_::Ptr{Cdouble},
         unsafe_store!(f_, c[i-1], i)
     end
 
-    # # gradients
-    # if needG > 0
-    #     # compute gradients
-    # end
+    # gradients  TODO: separate gradient computation in interface?
+    if needG > 0 && gradprovided
+
+        for j = 1:n
+            # gradients of f
+            unsafe_store!(G_, gJ[j], j)
+        end
+
+        k = n+1
+        for i = 2:nF
+            for j = 1:n
+                unsafe_store!(G_, gc[i-1, j], k)
+                k += 1
+            end
+        end
+    end
+
 
     # check if solutions fails
     if fail
         status = -1
     end
-
 
 end
 
@@ -78,8 +97,8 @@ function snopt(fun, x0, lb, ub, options)
     iGfun = Array{Int32}(lenG)
     jGvar = Array{Int32}(lenG)
     k = 1
-    for j = 1:n
-        for i = 1:nF
+    for i = 1:nF
+        for j = 1:n
             iGfun[k] = i
             jGvar[k] = j
             k += 1
@@ -123,8 +142,8 @@ function snopt(fun, x0, lb, ub, options)
     ru = [0.0]
     lenru = length(ru)
 
-    iprint = 9
-    isumm = 6
+    iprint = 6
+    isumm = 9
 
     # working arrays
     lencw = 500 + (n+nF)

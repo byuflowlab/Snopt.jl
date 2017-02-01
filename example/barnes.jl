@@ -1,4 +1,4 @@
-using Snopt: snopt
+import Snopt
 
 function barnes(x)
 
@@ -57,8 +57,8 @@ x0 = [10.0; 10.0]
 lb = [0.0; 0.0]
 ub = [65.0; 70.0]
 options = Dict()
-# options["Derivative option"] = 1
-options["Derivative level"] = 0
-options["Verify level"] = 1
+options["Derivative option"] = 0
+# options["Derivative level"] = 0
+# options["Verify level"] = 1
 
-snopt(barnes, x0, lb, ub, options)
+Snopt.snopt(barnes, x0, lb, ub, options)
