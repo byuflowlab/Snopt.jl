@@ -27,3 +27,8 @@
 *.exe
 *.out
 *.app
+
+
+# snopt
+fort*
+src/snopt/
