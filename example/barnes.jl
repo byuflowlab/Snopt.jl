@@ -56,7 +56,7 @@ end
 x0 = [10.0; 10.0]
 lb = [0.0; 0.0]
 ub = [65.0; 70.0]
-options = Dict()
+options = Dict{String, Any}()
 options["Derivative option"] = 0
 # options["Derivative level"] = 0
 # options["Verify level"] = 1

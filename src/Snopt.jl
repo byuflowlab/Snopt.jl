@@ -222,7 +222,7 @@ function snopt(fun, x0, lb, ub, options)
     errors = Cint[0]
 
     for key in keys(options)
-        ivalue = options[key]
+        value = options[key]
         buffer = string(key, repeat(" ", 55-length(key)))  # buffer length is 55 so pad with space.
 
         if length(key) > 55
@@ -232,11 +232,33 @@ function snopt(fun, x0, lb, ub, options)
 
         errors[1] = 0
 
-        ccall( (:snseti_, "snopt/libsnopt"), Void,
-            (Ptr{UInt8}, Ref{Cint}, Ref{Cint}, Ref{Cint}, Ptr{Cint},
-            Ptr{UInt8}, Ref{Cint}, Ptr{Cint}, Ref{Cint}, Ptr{Cdouble}, Ref{Cint}),
-            buffer, ivalue, iprint, isumm, errors,
-            cw, lencw, iw, leniw, rw, lenrw)
+        if typeof(value) == String
+
+            value = string(value, repeat(" ", 72-length(value)))
+
+            ccall( (:snset_, "snopt/libsnopt"), Void,
+                (Ptr{UInt8}, Ref{Cint}, Ref{Cint}, Ptr{Cint},
+                Ptr{UInt8}, Ref{Cint}, Ptr{Cint}, Ref{Cint}, Ptr{Cdouble}, Ref{Cint}),
+                value, iprint, isumm, errors,
+                cw, lencw, iw, leniw, rw, lenrw)
+
+        elseif isinteger(value)
+
+            ccall( (:snseti_, "snopt/libsnopt"), Void,
+                (Ptr{UInt8}, Ref{Cint}, Ref{Cint}, Ref{Cint}, Ptr{Cint},
+                Ptr{UInt8}, Ref{Cint}, Ptr{Cint}, Ref{Cint}, Ptr{Cdouble}, Ref{Cint}),
+                buffer, value, iprint, isumm, errors,
+                cw, lencw, iw, leniw, rw, lenrw)
+
+        elseif isreal(value)
+
+            ccall( (:snsetr_, "snopt/libsnopt"), Void,
+                (Ptr{UInt8}, Ref{Cdouble}, Ref{Cint}, Ref{Cint}, Ptr{Cint},
+                Ptr{UInt8}, Ref{Cint}, Ptr{Cint}, Ref{Cint}, Ptr{Cdouble}, Ref{Cint}),
+                buffer, value, iprint, isumm, errors,
+                cw, lencw, iw, leniw, rw, lenrw)
+
+        end
 
         # println(errors[1])
 

@@ -18,9 +18,10 @@ end
 x0 = [4.0; 4.0]
 lb = [-5.0; -5.0]
 ub = [5.0; 5.0]
-options = Dict()
+options = Dict{String, Any}()
 options["Derivative option"] = 1
 options["Verify level"] = 1
+options["Major optimality tolerance"] = 1e-6
 
 xopt, fopt, info = snopt(rosenbrock, x0, lb, ub, options)
 println(xopt)

@@ -91,10 +91,10 @@ end
 x0 = [10.0; 10.0]
 lb = [0.0; 0.0]
 ub = [65.0; 70.0]
-options = Dict()
+options = Dict{String, Any}()
 options["Derivative option"] = 1
-# options["Derivative level"] = 0
 options["Verify level"] = 1
+# options["anything"] = "Maximize"
 
 xopt, fopt, info = snopt(barnesgrad, x0, lb, ub, options)
 println(xopt)
