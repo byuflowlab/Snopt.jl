@@ -2,6 +2,42 @@ module Snopt
 
 export snopt
 
+
+codes = Dict{Int64, String}()
+codes[1] = "Finished successfully: optimality conditions satisfied"
+codes[2] = "Finished successfully: feasible point found"
+codes[3] = "Finished successfully: requested accuracy could not be achieved"
+codes[11] = "The problem appears to be infeasible: infeasible linear constraints"
+codes[12] = "The problem appears to be infeasible: infeasible linear equalities"
+codes[13] = "The problem appears to be infeasible: nonlinear infeasibilities minimized"
+codes[14] = "The problem appears to be infeasible: infeasibilities minimized"
+codes[21] = "The problem appears to be unbounded: unbounded objective"
+codes[22] = "The problem appears to be unbounded: constraint violation limit reached"
+codes[31] = "Resource limit error: iteration limit reached"
+codes[32] = "Resource limit error: major iteration limit reached"
+codes[33] = "Resource limit error: the superbasics limit is too small"
+codes[41] =  "Terminated after numerical difficulties: current point cannot be improved"
+codes[42] =  "Terminated after numerical difficulties: singular basis"
+codes[43] =  "Terminated after numerical difficulties: cannot satisfy the general constraints"
+codes[44] =  "Terminated after numerical difficulties: ill-conditioned null-space basis"
+codes[51] =  "Error in the user-supplied functions: incorrect objective derivatives"
+codes[52] =  "Error in the user-supplied functions: incorrect constraint derivatives"
+codes[61] =  "Undefined user-supplied functions: undefined function at the first feasible point"
+codes[62] =  "Undefined user-supplied functions: undefined function at the initial point"
+codes[63] =  "Undefined user-supplied functions: unable to proceed into undefined region"
+codes[71] =  "User requested termination: terminated during function evaluation "
+codes[74] =  "User requested termination: terminated from monitor routine"
+codes[81] =  "Insufficient storage allocated: work arrays must have at least 500 elements"
+codes[82] =  "Insufficient storage allocated: not enough character storage"
+codes[83] =  "Insufficient storage allocated: not enough integer storage"
+codes[84] =  "Insufficient storage allocated: not enough real storage"
+codes[91] =  "Input arguments out of range: invalid input argument"
+codes[92] =  "Input arguments out of range: basis file dimensions do not match this problem"
+codes[141] =  "System error: wrong number of basic variables"
+codes[142] =  "System error: error in basis package"
+
+
+
 # callback function
 function objcon_wrapper(status::Int32, n::Int32, x_::Ptr{Cdouble},
     needf::Int32, nF::Int32, f_::Ptr{Cdouble}, needG::Int32, lenG::Int32,
@@ -71,18 +107,17 @@ const usrfun = cfunction(objcon_wrapper, Void, (Ref{Cint}, Ref{Cint}, Ptr{Cdoubl
 # main call to snopt
 function snopt(fun, x0, lb, ub, options)
 
+    # call function
+    f, c = fun(x0)
+
     # TODO: there is a probably a better way than to use a global
     global objcon = fun
 
     # TODO: set a timer
 
-    # call function
-    f, c, fail = fun(x0)
-
-    # TODO: check if no constraints
 
     # setup
-    Start = 0  # cold start
+    Start = 0  # cold start  # TODO: allow warm starts
     nF = 1 + length(c)  # 1 objective + constraints
     n = length(x0)  # number of design variables
     ObjAdd = 0.0  # no constant term added to objective (user can add themselves if desired)
@@ -235,6 +270,9 @@ function snopt(fun, x0, lb, ub, options)
     ccall( (:closefiles_, "snopt/libsnopt"), Void,
         (Ref{Cint}, Ref{Cint}),
         iprint, isumm)
+
+
+    return x, F[1], codes[INFO[1]]  # xstar, fstar, info
 
 end
 

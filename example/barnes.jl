@@ -1,4 +1,4 @@
-import Snopt
+# import Snopt
 
 function barnes(x)
 
@@ -61,4 +61,7 @@ options["Derivative option"] = 0
 # options["Derivative level"] = 0
 # options["Verify level"] = 1
 
-Snopt.snopt(barnes, x0, lb, ub, options)
+xopt, fopt, info = snopt(barnes, x0, lb, ub, options)
+println(xopt)
+println(fopt)
+println(info)

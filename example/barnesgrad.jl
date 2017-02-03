@@ -96,5 +96,7 @@ options["Derivative option"] = 1
 # options["Derivative level"] = 0
 options["Verify level"] = 1
 
-snopt(barnesgrad, x0, lb, ub, options)
-println("here")
+xopt, fopt, info = snopt(barnesgrad, x0, lb, ub, options)
+println(xopt)
+println(fopt)
+println(info)
