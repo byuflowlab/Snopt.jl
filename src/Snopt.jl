@@ -74,8 +74,12 @@ function snopt(fun, x0, lb, ub, options)
     # TODO: there is a probably a better way than to use a global
     global objcon = fun
 
+    # TODO: set a timer
+
     # call function
     f, c, fail = fun(x0)
+
+    # TODO: check if no constraints
 
     # setup
     Start = 0  # cold start
@@ -142,8 +146,21 @@ function snopt(fun, x0, lb, ub, options)
     ru = [0.0]
     lenru = length(ru)
 
-    iprint = 6
-    isumm = 9
+    # open files for printing
+    iprint = 18
+    isumm = 19
+    printerr = Cint[0]
+    sumerr = Cint[0]
+    # TODO: maybe make the output file names options (hard coded in the fortran)
+    ccall( (:openfiles_, "snopt/libsnopt"), Void,
+        (Ref{Cint}, Ref{Cint}, Ptr{Cint}, Ptr{Cint}),
+        iprint, isumm, printerr, sumerr)
+    if printerr[1] != 0
+        println("failed to open print file")
+    end
+    if sumerr[1] != 0
+        println("failed to open summary file")
+    end
 
     # working arrays
     lencw = 500 + (n+nF)
@@ -155,7 +172,7 @@ function snopt(fun, x0, lb, ub, options)
 
 
     # compilation command I used (OS X with gfortran):
-    # gfortran -shared -O2 *.f -o libhybrd.dylib -fPIC -v
+    # gfortran -shared -O2 *.f *.f90 -o libhybrd.dylib -fPIC -v
 
     # --- initialize ----
     ccall( (:sninit_, "snopt/libsnopt"), Void,
@@ -213,6 +230,11 @@ function snopt(fun, x0, lb, ub, options)
         rw, lenrw)
 
     # println("done")
+
+    # close output files
+    ccall( (:closefiles_, "snopt/libsnopt"), Void,
+        (Ref{Cint}, Ref{Cint}),
+        iprint, isumm)
 
 end
 

@@ -1,4 +1,4 @@
-import Snopt
+# import Snopt
 
 function barnesgrad(x)
 
@@ -96,5 +96,5 @@ options["Derivative option"] = 1
 # options["Derivative level"] = 0
 options["Verify level"] = 1
 
-Snopt.snopt(barnesgrad, x0, lb, ub, options)
+snopt(barnesgrad, x0, lb, ub, options)
 println("here")
