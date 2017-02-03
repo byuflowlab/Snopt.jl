@@ -22,3 +22,14 @@ subroutine closefiles(printnum, sumnum)
     close(sumnum)
 
 end subroutine
+
+
+subroutine flushfiles(printnum, sumnum)
+
+    ! inputs
+    integer, intent(in) :: printnum, sumnum
+
+    flush(printnum)
+    flush(sumnum)
+
+end subroutine

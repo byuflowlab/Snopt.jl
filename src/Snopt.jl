@@ -37,6 +37,8 @@ codes[141] =  "System error: wrong number of basic variables"
 codes[142] =  "System error: error in basis package"
 
 
+PRINTNUM = 18
+SUMNUM = 19
 
 # callback function
 function objcon_wrapper(status::Int32, n::Int32, x_::Ptr{Cdouble},
@@ -94,6 +96,12 @@ function objcon_wrapper(status::Int32, n::Int32, x_::Ptr{Cdouble},
     if fail
         status = -1
     end
+
+    # flush output files to see progress
+    ccall( (:flushfiles_, "snopt/libsnopt"), Void,
+        (Ref{Cint}, Ref{Cint}),
+        PRINTNUM, SUMNUM)
+
 
 end
 
@@ -182,8 +190,8 @@ function snopt(fun, x0, lb, ub, options)
     lenru = length(ru)
 
     # open files for printing
-    iprint = 18
-    isumm = 19
+    iprint = PRINTNUM
+    isumm = SUMNUM
     printerr = Cint[0]
     sumerr = Cint[0]
     # TODO: maybe make the output file names options (hard coded in the fortran)
