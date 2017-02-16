@@ -215,7 +215,7 @@ function snopt(fun, x0, lb, ub, options)
 
 
     # compilation command I used (OS X with gfortran):
-    # gfortran -shared -O2 *.f *.f90 -o libhybrd.dylib -fPIC -v
+    # gfortran -shared -O2 *.f *.f90 -o libsnopt.dylib -fPIC -v
 
     # --- initialize ----
     ccall( (:sninit_, "snopt/libsnopt"), Void,
