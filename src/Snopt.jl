@@ -113,7 +113,8 @@ const usrfun = cfunction(objcon_wrapper, Void, (Ref{Cint}, Ref{Cint}, Ptr{Cdoubl
 
 
 # main call to snopt
-function snopt(fun, x0, lb, ub, options)
+function snopt(fun, x0, lb, ub, options;
+               printfile = "snopt-print.out", sumfile = "snopt-summary.out")
 
     # call function
     f, c = fun(x0)
@@ -194,10 +195,9 @@ function snopt(fun, x0, lb, ub, options)
     isumm = SUMNUM
     printerr = Cint[0]
     sumerr = Cint[0]
-    # TODO: maybe make the output file names options (hard coded in the fortran)
-    ccall( (:openfiles_, "snopt/libsnopt"), Void,
-        (Ref{Cint}, Ref{Cint}, Ptr{Cint}, Ptr{Cint}),
-        iprint, isumm, printerr, sumerr)
+    ccall( (:openfiles_, "libsnopt"), Void,
+        (Ref{Cint}, Ref{Cint}, Ptr{Cint}, Ptr{Cint}, Ptr{UInt8}, Ptr{UInt8}),
+        iprint, isumm, printerr, sumerr, printfile, sumfile)
     if printerr[1] != 0
         println("failed to open print file")
     end

@@ -1,13 +1,14 @@
-subroutine openfiles(printnum, sumnum, printerr, sumerr)
+subroutine openfiles(printnum, sumnum, printerr, sumerr, printfile, sumfile)
 
     ! inputs
     integer, intent(in) :: printnum, sumnum
+    character*72, intent(in) :: printfile, sumfile
 
     ! outputs
     integer, intent(out) :: printerr, sumerr
 
-    open(printnum, file='snopt-print.out', action='write', status='replace', iostat=printerr)
-    open(sumnum, file='snopt-summary.out', action='write', status='replace', iostat=sumerr)
+    open(printnum, file=printfile, action='write', status='replace', iostat=printerr)
+    open(sumnum, file=sumfile, action='write', status='replace', iostat=sumerr)
 
 
 end subroutine
