@@ -2,7 +2,7 @@ subroutine openfiles(printnum, sumnum, printerr, sumerr, printfile, sumfile)
 
     ! inputs
     integer, intent(in) :: printnum, sumnum
-    character*72, intent(in) :: printfile, sumfile
+    character*250, intent(in) :: printfile, sumfile
 
     ! outputs
     integer, intent(out) :: printerr, sumerr
