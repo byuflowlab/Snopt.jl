@@ -206,11 +206,11 @@ function snopt(fun, x0, lb, ub, options;
     end
 
     # working arrays
-    lencw = 500 + (n+nF)
+    lencw = 500 + (n+nF)*5
     cw = Array{UInt8}(lencw, 8)
-    leniw = 500 + 100*(n+nF)
+    leniw = 500 + 100*(n+nF)*5
     iw = Array{Int32}(leniw)
-    lenrw = 500 + 200*(n+nF)
+    lenrw = 500 + 200*(n+nF)*5
     rw = Array{Float64}(lenrw)
 
 
