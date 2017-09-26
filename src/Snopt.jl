@@ -98,7 +98,7 @@ function objcon_wrapper(status::Int32, n::Int32, x_::Ptr{Cdouble},
     end
 
     # flush output files to see progress
-    ccall( (:flushfiles_, "snopt/libsnopt"), Void,
+    ccall( (:flushfiles_, "libsnopt"), Void,
         (Ref{Cint}, Ref{Cint}),
         PRINTNUM, SUMNUM)
 
@@ -218,7 +218,7 @@ function snopt(fun, x0, lb, ub, options;
     # gfortran -shared -O2 *.f *.f90 -o libsnopt.dylib -fPIC -v
 
     # --- initialize ----
-    ccall( (:sninit_, "snopt/libsnopt"), Void,
+    ccall( (:sninit_, "libsnopt"), Void,
         (Ref{Cint}, Ref{Cint}, Ptr{UInt8}, Ref{Cint}, Ptr{Cint},
         Ref{Cint}, Ptr{Cdouble}, Ref{Cint}),
         iprint, isumm, cw, lencw, iw,
@@ -244,7 +244,7 @@ function snopt(fun, x0, lb, ub, options;
 
             value = string(value, repeat(" ", 72-length(value)))
 
-            ccall( (:snset_, "snopt/libsnopt"), Void,
+            ccall( (:snset_, "libsnopt"), Void,
                 (Ptr{UInt8}, Ref{Cint}, Ref{Cint}, Ptr{Cint},
                 Ptr{UInt8}, Ref{Cint}, Ptr{Cint}, Ref{Cint}, Ptr{Cdouble}, Ref{Cint}),
                 value, iprint, isumm, errors,
@@ -252,7 +252,7 @@ function snopt(fun, x0, lb, ub, options;
 
         elseif isinteger(value)
 
-            ccall( (:snseti_, "snopt/libsnopt"), Void,
+            ccall( (:snseti_, "libsnopt"), Void,
                 (Ptr{UInt8}, Ref{Cint}, Ref{Cint}, Ref{Cint}, Ptr{Cint},
                 Ptr{UInt8}, Ref{Cint}, Ptr{Cint}, Ref{Cint}, Ptr{Cdouble}, Ref{Cint}),
                 buffer, value, iprint, isumm, errors,
@@ -260,7 +260,7 @@ function snopt(fun, x0, lb, ub, options;
 
         elseif isreal(value)
 
-            ccall( (:snsetr_, "snopt/libsnopt"), Void,
+            ccall( (:snsetr_, "libsnopt"), Void,
                 (Ptr{UInt8}, Ref{Cdouble}, Ref{Cint}, Ref{Cint}, Ptr{Cint},
                 Ptr{UInt8}, Ref{Cint}, Ptr{Cint}, Ref{Cint}, Ptr{Cdouble}, Ref{Cint}),
                 buffer, value, iprint, isumm, errors,
@@ -274,7 +274,7 @@ function snopt(fun, x0, lb, ub, options;
 
     # --- call snopta ----
 
-    ccall( (:snopta_, "snopt/libsnopt"), Void,
+    ccall( (:snopta_, "libsnopt"), Void,
         (Ref{Cint}, Ref{Cint}, Ref{Cint}, Ref{Cint}, Ref{Cint}, Ref{Cdouble},
         Ref{Cint}, Ptr{UInt8}, Ptr{Void}, Ptr{Cint}, Ptr{Cint}, Ref{Cint},
         Ref{Cint}, Ptr{Cdouble}, Ptr{Cint}, Ptr{Cint}, Ref{Cint}, Ref{Cint},
@@ -297,7 +297,7 @@ function snopt(fun, x0, lb, ub, options;
     # println("done")
 
     # close output files
-    ccall( (:closefiles_, "snopt/libsnopt"), Void,
+    ccall( (:closefiles_, "libsnopt"), Void,
         (Ref{Cint}, Ref{Cint}),
         iprint, isumm)
 

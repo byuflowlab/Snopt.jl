@@ -14,7 +14,10 @@ function rosenbrock(x)
 
 end
 
-
+fileLoc = splitdir(@__FILE__)
+#Load Snopt
+push!(LOAD_PATH,"$(fileLoc[1])/../../Snopt.jl/src")
+using Snopt
 x0 = [4.0; 4.0]
 lb = [-5.0; -5.0]
 ub = [5.0; 5.0]
