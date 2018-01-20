@@ -31,4 +31,4 @@
 
 # snopt
 fort*
-src/snopt/
+deps/src
