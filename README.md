@@ -27,6 +27,12 @@ Pkg.clone(...)
 Pkg.build("Snopt")
 ```
 
+## Run tests
+
+```julia
+Pkg.test("Snopt")
+```
+
 ## To Use
 
 ```julia
