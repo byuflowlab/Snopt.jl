@@ -4,7 +4,7 @@ Julia interface to SNOPT (must obtain a licensed copy of SNOPT separately).
 ### To Install
 
 1. Clone the repo:
-```julia 
+```julia
 Pkg.clone(...)
 ```
 
@@ -23,16 +23,14 @@ Pkg.clone(...)
 4.  sn27lu.f, sn27lu77.f, and sn27lu90.f contain duplicate symbols.  You'll need to keep only one file.  I deleted the latter two files.
 
 5. Compile the fortran code.
-```julia 
+```julia
 Pkg.build("Snopt")
 ```
 
 ## To Use
 
 ```julia
-    using Snopt
+using Snopt
 ```
 
 See examples in tests.
-
-
