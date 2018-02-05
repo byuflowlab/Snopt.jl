@@ -196,7 +196,7 @@ function snopt(fun, x0, lb, ub, options;
     isumm = SUMNUM
     printerr = Cint[0]
     sumerr = Cint[0]
-    ccall( (:openfiles_, "libsnopt"), Void,
+    ccall( (:openfiles_, snoptlib), Void,
         (Ref{Cint}, Ref{Cint}, Ptr{Cint}, Ptr{Cint}, Ptr{UInt8}, Ptr{UInt8}),
         iprint, isumm, printerr, sumerr, printfile, sumfile)
     if printerr[1] != 0
