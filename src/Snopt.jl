@@ -178,9 +178,9 @@ function snopt(fun, x0, lb, ub, options;
     Fmul = zeros(nF)
     # INFO = 0
     INFO = Cint[0]
-    mincw = 0  # TODO: check that these are sufficient
-    miniw = 0
-    minrw = 0
+    mincw = Cint[0]  # TODO: check that these are sufficient
+    miniw = Cint[0]
+    minrw = Cint[0]
     nS = Cint[0]
     nInf = Cint[0]
     sInf = Cdouble[0]
@@ -206,14 +206,13 @@ function snopt(fun, x0, lb, ub, options;
         println("failed to open summary file")
     end
 
-    # working arrays
-    lencw = 500 + (n+nF)*5
-    cw = Array{UInt8}(lencw, 8)
-    leniw = 500 + 100*(n+nF)*5
-    iw = Array{Int32}(leniw)
-    lenrw = 500 + 200*(n+nF)*5
-    rw = Array{Float64}(lenrw)
-
+    # temporary working arrays
+    ltmpcw = 500
+    cw = Array{UInt8}(ltmpcw*8)
+    ltmpiw = 500
+    iw = Array{Int32}(ltmpiw)
+    ltmprw = 500
+    rw = Array{Float64}(ltmprw)
 
     # compilation command I used (OS X with gfortran):
     # gfortran -shared -O2 *.f *.f90 -o libsnopt.dylib -fPIC -v
@@ -222,13 +221,48 @@ function snopt(fun, x0, lb, ub, options;
     ccall( (:sninit_, snoptlib), Void,
         (Ref{Cint}, Ref{Cint}, Ptr{UInt8}, Ref{Cint}, Ptr{Cint},
         Ref{Cint}, Ptr{Cdouble}, Ref{Cint}),
-        iprint, isumm, cw, lencw, iw,
-        leniw, rw, lenrw)
+        iprint, isumm, cw, ltmpcw, iw,
+        ltmpiw, rw, ltmprw)
     # println("here")
 
-    # --- set options ----
+    # --- estimate memory requirements ---
+    ccall( (:snmema_, snoptlib), Void,
+        (Ref{Cint}, Ref{Cint}, Ref{Cint}, Ref{Cint}, Ref{Cint}, Ref{Cint}, Ref{Cint},
+        Ref{Cint}, Ref{Cint}, Ref{Cint},
+        Ptr{UInt8}, Ref{Cint}, Ref{Cint}, Ref{Cint}, Ref{Cdouble}, Ref{Cint}),
+        INFO, nF, n, nxname, nFname, neA, neG,
+        mincw, miniw, minrw,
+        cw, ltmpcw, iw, ltmpiw, rw, ltmprw)
+
+    # --- resize arrays to match memory requirements
+    lencw = mincw[1]
+    resize!(cw,lencw*8)
+    leniw = miniw[1]
+    resize!(iw,leniw)
+    lenrw = minrw[1]
+    resize!(rw,lenrw)
 
     errors = Cint[0]
+
+    ccall( (:snseti_, snoptlib), Void,
+        (Ptr{UInt8}, Ref{Cint}, Ref{Cint}, Ref{Cint}, Ptr{Cint},
+        Ptr{UInt8}, Ref{Cint}, Ptr{Cint}, Ref{Cint}, Ptr{Cdouble}, Ref{Cint}),
+        "Total character workspace", lencw, iprint, isumm, errors,
+        cw, ltmpcw, iw, ltmpiw, rw, ltmprw)
+
+    ccall( (:snseti_, snoptlib), Void,
+        (Ptr{UInt8}, Ref{Cint}, Ref{Cint}, Ref{Cint}, Ptr{Cint},
+        Ptr{UInt8}, Ref{Cint}, Ptr{Cint}, Ref{Cint}, Ptr{Cdouble}, Ref{Cint}),
+        "Total integer   workspace", leniw, iprint, isumm, errors,
+        cw, ltmpcw, iw, ltmpiw, rw, ltmprw)
+
+    ccall( (:snseti_, snoptlib), Void,
+        (Ptr{UInt8}, Ref{Cint}, Ref{Cint}, Ref{Cint}, Ptr{Cint},
+        Ptr{UInt8}, Ref{Cint}, Ptr{Cint}, Ref{Cint}, Ptr{Cdouble}, Ref{Cint}),
+        "Total real      workspace", lenrw, iprint, isumm, errors,
+        cw, ltmpcw, iw, ltmpiw, rw, ltmprw)
+
+    # --- set options ----
 
     for key in keys(options)
         value = options[key]
