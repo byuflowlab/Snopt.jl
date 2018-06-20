@@ -225,44 +225,8 @@ function snopt(fun, x0, lb, ub, options;
         ltmpiw, rw, ltmprw)
     # println("here")
 
-    # --- estimate memory requirements ---
-    ccall( (:snmema_, snoptlib), Void,
-        (Ref{Cint}, Ref{Cint}, Ref{Cint}, Ref{Cint}, Ref{Cint}, Ref{Cint}, Ref{Cint},
-        Ref{Cint}, Ref{Cint}, Ref{Cint},
-        Ptr{UInt8}, Ref{Cint}, Ref{Cint}, Ref{Cint}, Ref{Cdouble}, Ref{Cint}),
-        INFO, nF, n, nxname, nFname, neA, neG,
-        mincw, miniw, minrw,
-        cw, ltmpcw, iw, ltmpiw, rw, ltmprw)
-
-    # --- resize arrays to match memory requirements
-    lencw = mincw[1]
-    resize!(cw,lencw*8)
-    leniw = miniw[1]
-    resize!(iw,leniw)
-    lenrw = minrw[1]
-    resize!(rw,lenrw)
-
-    errors = Cint[0]
-
-    ccall( (:snseti_, snoptlib), Void,
-        (Ptr{UInt8}, Ref{Cint}, Ref{Cint}, Ref{Cint}, Ptr{Cint},
-        Ptr{UInt8}, Ref{Cint}, Ptr{Cint}, Ref{Cint}, Ptr{Cdouble}, Ref{Cint}),
-        "Total character workspace", lencw, iprint, isumm, errors,
-        cw, ltmpcw, iw, ltmpiw, rw, ltmprw)
-
-    ccall( (:snseti_, snoptlib), Void,
-        (Ptr{UInt8}, Ref{Cint}, Ref{Cint}, Ref{Cint}, Ptr{Cint},
-        Ptr{UInt8}, Ref{Cint}, Ptr{Cint}, Ref{Cint}, Ptr{Cdouble}, Ref{Cint}),
-        "Total integer   workspace", leniw, iprint, isumm, errors,
-        cw, ltmpcw, iw, ltmpiw, rw, ltmprw)
-
-    ccall( (:snseti_, snoptlib), Void,
-        (Ptr{UInt8}, Ref{Cint}, Ref{Cint}, Ref{Cint}, Ptr{Cint},
-        Ptr{UInt8}, Ref{Cint}, Ptr{Cint}, Ref{Cint}, Ptr{Cdouble}, Ref{Cint}),
-        "Total real      workspace", lenrw, iprint, isumm, errors,
-        cw, ltmpcw, iw, ltmpiw, rw, ltmprw)
-
     # --- set options ----
+    errors = Cint[0]
 
     for key in keys(options)
         value = options[key]
@@ -283,7 +247,7 @@ function snopt(fun, x0, lb, ub, options;
                 (Ptr{UInt8}, Ref{Cint}, Ref{Cint}, Ptr{Cint},
                 Ptr{UInt8}, Ref{Cint}, Ptr{Cint}, Ref{Cint}, Ptr{Cdouble}, Ref{Cint}),
                 value, iprint, isumm, errors,
-                cw, lencw, iw, leniw, rw, lenrw)
+                cw, ltmpcw, iw, ltmpiw, rw, ltmprw)
 
         elseif isinteger(value)
 
@@ -291,7 +255,7 @@ function snopt(fun, x0, lb, ub, options;
                 (Ptr{UInt8}, Ref{Cint}, Ref{Cint}, Ref{Cint}, Ptr{Cint},
                 Ptr{UInt8}, Ref{Cint}, Ptr{Cint}, Ref{Cint}, Ptr{Cdouble}, Ref{Cint}),
                 buffer, value, iprint, isumm, errors,
-                cw, lencw, iw, leniw, rw, lenrw)
+                cw, ltmpcw, iw, ltmpiw, rw, ltmprw)
 
         elseif isreal(value)
 
@@ -299,12 +263,42 @@ function snopt(fun, x0, lb, ub, options;
                 (Ptr{UInt8}, Ref{Cdouble}, Ref{Cint}, Ref{Cint}, Ptr{Cint},
                 Ptr{UInt8}, Ref{Cint}, Ptr{Cint}, Ref{Cint}, Ptr{Cdouble}, Ref{Cint}),
                 buffer, value, iprint, isumm, errors,
-                cw, lencw, iw, leniw, rw, lenrw)
+                cw, ltmpcw, iw, ltmpiw, rw, ltmprw)
 
         end
 
         # println(errors[1])
 
+    end
+
+    # --- set memory requirements --- #
+    ccall( (:snmema_, snoptlib), Void,
+        (Ref{Cint}, Ref{Cint}, Ref{Cint}, Ref{Cint}, Ref{Cint}, Ref{Cint}, Ref{Cint},
+        Ref{Cint}, Ref{Cint}, Ref{Cint},
+        Ptr{UInt8}, Ref{Cint}, Ref{Cint}, Ref{Cint}, Ref{Cdouble}, Ref{Cint}),
+        INFO, nF, n, nxname, nFname, neA, neG,
+        mincw, miniw, minrw,
+        cw, ltmpcw, iw, ltmpiw, rw, ltmprw)
+
+    # --- resize arrays to match memory requirements
+    lencw = mincw
+    resize!(cw,lencw[1]*8)
+    leniw = miniw
+    resize!(iw,leniw[1])
+    lenrw = minrw
+    resize!(rw,lenrw[1])
+
+    memkey = ("Total character workspace", "Total integer   workspace",
+        "Total real      workspace")
+    memvalue = (lencw,leniw,lenrw)
+    for (key,value) in zip(memkey,memvalue)
+        buffer = string(key, repeat(" ", 55-length(key)))  # buffer length is 55 so pad with space.
+        errors[1] = 0
+        ccall( (:snseti_, snoptlib), Void,
+            (Ptr{UInt8}, Ref{Cint}, Ref{Cint}, Ref{Cint}, Ptr{Cint},
+            Ptr{UInt8}, Ref{Cint}, Ptr{Cint}, Ref{Cint}, Ptr{Cdouble}, Ref{Cint}),
+            buffer, value, iprint, isumm, errors,
+            cw, ltmpcw, iw, ltmpiw, rw, ltmprw)
     end
 
     # --- call snopta ----
