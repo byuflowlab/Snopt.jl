@@ -12,6 +12,7 @@ codes[11] = "The problem appears to be infeasible: infeasible linear constraints
 codes[12] = "The problem appears to be infeasible: infeasible linear equalities"
 codes[13] = "The problem appears to be infeasible: nonlinear infeasibilities minimized"
 codes[14] = "The problem appears to be infeasible: infeasibilities minimized"
+codes[15] = "The problem appears to be infeasible: infeasible linear constraints in QP subproblem"
 codes[21] = "The problem appears to be unbounded: unbounded objective"
 codes[22] = "The problem appears to be unbounded: constraint violation limit reached"
 codes[31] = "Resource limit error: iteration limit reached"
