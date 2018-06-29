@@ -43,10 +43,12 @@ const PRINTNUM = 18
 const SUMNUM = 19
 
 # callback function
-function objcon_wrapper(status::Int32, n::Int32, x_::Ptr{Cdouble},
+function objcon_wrapper(status_::Ptr{Int32}, n::Int32, x_::Ptr{Cdouble},
     needf::Int32, nF::Int32, f_::Ptr{Cdouble}, needG::Int32, lenG::Int32,
     G_::Ptr{Cdouble}, cu::Ptr{UInt8}, lencu::Int32, iu::Ptr{Cint},
     leniu::Int32, ru_::Ptr{Cdouble}, lenru::Int32)
+
+    status = unsafe_load(status_)
 
     # check if solution finished, no need to calculate more
     if status >= 2
@@ -96,7 +98,7 @@ function objcon_wrapper(status::Int32, n::Int32, x_::Ptr{Cdouble},
 
     # check if solutions fails
     if fail
-        status = -1
+        unsafe_store!(status_, -1, 1)
     end
 
     # flush output files to see progress
@@ -108,7 +110,7 @@ function objcon_wrapper(status::Int32, n::Int32, x_::Ptr{Cdouble},
 end
 
 # c wrapper to callback function
-const usrfun = cfunction(objcon_wrapper, Void, (Ref{Cint}, Ref{Cint}, Ptr{Cdouble},
+const usrfun = cfunction(objcon_wrapper, Void, (Ptr{Cint}, Ref{Cint}, Ptr{Cdouble},
     Ref{Cint}, Ref{Cint}, Ptr{Cdouble}, Ref{Cint}, Ref{Cint}, Ptr{Cdouble},
     Ptr{UInt8}, Ref{Cint}, Ptr{Cint}, Ref{Cint}, Ptr{Cdouble}, Ref{Cint}))
 
