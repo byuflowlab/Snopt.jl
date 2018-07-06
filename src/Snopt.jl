@@ -73,8 +73,8 @@ function objcon_wrapper(status_::Ptr{Int32}, n::Int32, x_::Ptr{Cdouble},
         gradprovided = false
     elseif length(res) == 5
         J, c, gJ, gc, fail = res
-        gradprovided = true
         ceq = Float64[]
+        gradprovided = true
     else
         J, c, ceq, gJ, gc, gceq, fail = res
         gradprovided = true
@@ -100,14 +100,12 @@ function objcon_wrapper(status_::Ptr{Int32}, n::Int32, x_::Ptr{Cdouble},
         end
 
         k = n+1
-        println("c: ",length(c))
         for i = 2 : nF - length(ceq)
             for j = 1:n
                 unsafe_store!(G_, gc[i-1, j], k)
                 k += 1
             end
         end
-        println("ceq: ",length(ceq))
         for i = nF - length(ceq) + 1 : nF
             for j = 1:n
                 unsafe_store!(G_, gc[i-length(c)-1, j], k)
