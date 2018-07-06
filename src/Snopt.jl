@@ -108,7 +108,7 @@ function objcon_wrapper(status_::Ptr{Int32}, n::Int32, x_::Ptr{Cdouble},
         end
         for i = nF - length(ceq) + 1 : nF
             for j = 1:n
-                unsafe_store!(G_, gc[i-length(c)-1, j], k)
+                unsafe_store!(G_, gceq[i-length(c)-1, j], k)
                 k += 1
             end
         end
