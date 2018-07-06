@@ -66,16 +66,29 @@ function objcon_wrapper(status_::Ptr{Int32}, n::Int32, x_::Ptr{Cdouble},
     res = objcon(x)
     if length(res) == 3
         J, c, fail = res
+        ceq = Float64[]
         gradprovided = false
-    else
+    elseif length(res) == 4
+        J, c, ceq, fail = res
+        gradprovided = false
+    elseif length(res) == 5
         J, c, gJ, gc, fail = res
+        gradprovided = true
+        ceq = Float64[]
+    else
+        J, c, ceq, gJ, gc, gceq, fail = res
         gradprovided = true
     end
 
     # copy obj and con values into C pointer
     unsafe_store!(f_, J, 1)
-    for i = 2:nF
+    for i = 2 : nF - length(ceq)
         unsafe_store!(f_, c[i-1], i)
+    end
+    if !isempty(ceq)
+        for i = nF - length(ceq) + 1 : nF
+            unsafe_store!(f_, ceq[i-length(c)-1], i)
+        end
     end
 
     # gradients  TODO: separate gradient computation in interface?
@@ -87,9 +100,17 @@ function objcon_wrapper(status_::Ptr{Int32}, n::Int32, x_::Ptr{Cdouble},
         end
 
         k = n+1
-        for i = 2:nF
+        println("c: ",length(c))
+        for i = 2 : nF - length(ceq)
             for j = 1:n
                 unsafe_store!(G_, gc[i-1, j], k)
+                k += 1
+            end
+        end
+        println("ceq: ",length(ceq))
+        for i = nF - length(ceq) + 1 : nF
+            for j = 1:n
+                unsafe_store!(G_, gc[i-length(c)-1, j], k)
                 k += 1
             end
         end
@@ -121,7 +142,13 @@ function snopt(fun, x0, lb, ub, options;
                printfile = "snopt-print.out", sumfile = "snopt-summary.out")
 
     # call function
-    f, c = fun(x0)
+    res = fun(x0)
+    if (length(res) == 3) || (length(res) == 5)
+        J, c, _ = res
+        ceq = Float64[]
+    else
+        J, c, ceq, _ = res
+    end
 
     # TODO: there is a probably a better way than to use a global
     global objcon = fun
@@ -131,7 +158,7 @@ function snopt(fun, x0, lb, ub, options;
 
     # setup
     Start = 0  # cold start  # TODO: allow warm starts
-    nF = 1 + length(c)  # 1 objective + constraints
+    nF = 1 + length(c) + length(ceq)  # 1 objective + constraints
     n = length(x0)  # number of design variables
     ObjAdd = 0.0  # no constant term added to objective (user can add themselves if desired)
     ObjRow = 1  # objective is first thing returned, then constraints
@@ -162,6 +189,10 @@ function snopt(fun, x0, lb, ub, options;
     xupp = ub
     Flow = -1e20*ones(nF)  # TODO: check Infinite Bound size
     Fupp = zeros(nF)  # TODO: currently c <= 0, but perhaps change
+
+    if !isempty(ceq) #equality constraints
+        Flow[nF - length(ceq) + 1 : nF] = 0.0
+    end
 
     # names
     Prob = "opt prob"  # problem name TODO: change later
