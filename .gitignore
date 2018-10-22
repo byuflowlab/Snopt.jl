@@ -32,3 +32,7 @@
 # snopt
 fort*
 deps/src
+
+# Julia
+Manifest.toml
+deps/build.log

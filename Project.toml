@@ -1,0 +1,7 @@
+name = "Snopt"
+uuid = "0e9dc826-d618-11e8-1f57-c34e87fde2c0"
+authors = ["Taylor McDonnell <taylor.golden.mcdonnell@gmail.com>"]
+version = "0.1.0"
+
+[deps]
+Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"

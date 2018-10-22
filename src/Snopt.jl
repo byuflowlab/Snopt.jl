@@ -2,6 +2,8 @@ module Snopt
 
 export snopt
 
+__precompile__(false)
+
 const snoptlib = joinpath(dirname(@__FILE__), "../deps/src/libsnopt")
 
 const codes = Dict{Int64, String}()
@@ -121,7 +123,7 @@ function objcon_wrapper(status_::Ptr{Int32}, n::Int32, x_::Ptr{Cdouble},
     end
 
     # flush output files to see progress
-    ccall( (:flushfiles_, snoptlib), Void,
+    ccall( (:flushfiles_, snoptlib), Nothing,
         (Ref{Cint}, Ref{Cint}),
         PRINTNUM, SUMNUM)
 
@@ -129,7 +131,7 @@ function objcon_wrapper(status_::Ptr{Int32}, n::Int32, x_::Ptr{Cdouble},
 end
 
 # c wrapper to callback function
-const usrfun = cfunction(objcon_wrapper, Void, (Ptr{Cint}, Ref{Cint}, Ptr{Cdouble},
+const usrfun = @cfunction(objcon_wrapper, Nothing, (Ptr{Cint}, Ref{Cint}, Ptr{Cdouble},
     Ref{Cint}, Ref{Cint}, Ptr{Cdouble}, Ref{Cint}, Ref{Cint}, Ptr{Cdouble},
     Ptr{UInt8}, Ref{Cint}, Ptr{Cint}, Ref{Cint}, Ptr{Cdouble}, Ref{Cint}))
 
@@ -171,8 +173,8 @@ function snopt(fun, x0, lb, ub, options;
     # nonlinear constraints (assume dense jacobian for now)
     lenG = nF*n
     neG = lenG
-    iGfun = Array{Int32}(lenG)
-    jGvar = Array{Int32}(lenG)
+    iGfun = Array{Int32}(undef, lenG)
+    jGvar = Array{Int32}(undef, lenG)
     k = 1
     for i = 1:nF
         for j = 1:n
@@ -195,10 +197,10 @@ function snopt(fun, x0, lb, ub, options;
     # names
     Prob = "opt prob"  # problem name TODO: change later
     nxname = 1  # TODO: change later
-    xnames = Array{UInt8}(nxname, 8)
+    xnames = Array{UInt8}(undef, nxname, 8)
     # xnames = ["TODOTODO"]
     nFname = 1  # TODO: change later
-    Fnames = Array{UInt8}(nFname, 8)
+    Fnames = Array{UInt8}(undef, nFname, 8)
     # Fnames = ["TODOTODO"]
 
     # starting info
@@ -217,7 +219,7 @@ function snopt(fun, x0, lb, ub, options;
     nInf = Cint[0]
     sInf = Cdouble[0]
     lencu = 1
-    cu = Array{UInt8}(lencu, 8)
+    cu = Array{UInt8}(undef, lencu, 8)
     iu = Int32[0]
     leniu = length(iu)
     ru = [0.0]
@@ -228,7 +230,7 @@ function snopt(fun, x0, lb, ub, options;
     isumm = SUMNUM
     printerr = Cint[0]
     sumerr = Cint[0]
-    ccall( (:openfiles_, snoptlib), Void,
+    ccall( (:openfiles_, snoptlib), Nothing,
         (Ref{Cint}, Ref{Cint}, Ptr{Cint}, Ptr{Cint}, Ptr{UInt8}, Ptr{UInt8}),
         iprint, isumm, printerr, sumerr, printfile, sumfile)
     if printerr[1] != 0
@@ -240,17 +242,17 @@ function snopt(fun, x0, lb, ub, options;
 
     # temporary working arrays
     ltmpcw = 500
-    cw = Array{UInt8}(ltmpcw*8)
+    cw = Array{UInt8}(undef, ltmpcw*8)
     ltmpiw = 500
-    iw = Array{Int32}(ltmpiw)
+    iw = Array{Int32}(undef, ltmpiw)
     ltmprw = 500
-    rw = Array{Float64}(ltmprw)
+    rw = Array{Float64}(undef, ltmprw)
 
     # compilation command I used (OS X with gfortran):
     # gfortran -shared -O2 *.f *.f90 -o libsnopt.dylib -fPIC -v
 
     # --- initialize ----
-    ccall( (:sninit_, snoptlib), Void,
+    ccall( (:sninit_, snoptlib), Nothing,
         (Ref{Cint}, Ref{Cint}, Ptr{UInt8}, Ref{Cint}, Ptr{Cint},
         Ref{Cint}, Ptr{Cdouble}, Ref{Cint}),
         iprint, isumm, cw, ltmpcw, iw,
@@ -275,7 +277,7 @@ function snopt(fun, x0, lb, ub, options;
 
             value = string(value, repeat(" ", 72-length(value)))
 
-            ccall( (:snset_, snoptlib), Void,
+            ccall( (:snset_, snoptlib), Nothing,
                 (Ptr{UInt8}, Ref{Cint}, Ref{Cint}, Ptr{Cint},
                 Ptr{UInt8}, Ref{Cint}, Ptr{Cint}, Ref{Cint}, Ptr{Cdouble}, Ref{Cint}),
                 value, iprint, isumm, errors,
@@ -283,7 +285,7 @@ function snopt(fun, x0, lb, ub, options;
 
         elseif isinteger(value)
 
-            ccall( (:snseti_, snoptlib), Void,
+            ccall( (:snseti_, snoptlib), Nothing,
                 (Ptr{UInt8}, Ref{Cint}, Ref{Cint}, Ref{Cint}, Ptr{Cint},
                 Ptr{UInt8}, Ref{Cint}, Ptr{Cint}, Ref{Cint}, Ptr{Cdouble}, Ref{Cint}),
                 buffer, value, iprint, isumm, errors,
@@ -291,7 +293,7 @@ function snopt(fun, x0, lb, ub, options;
 
         elseif isreal(value)
 
-            ccall( (:snsetr_, snoptlib), Void,
+            ccall( (:snsetr_, snoptlib), Nothing,
                 (Ptr{UInt8}, Ref{Cdouble}, Ref{Cint}, Ref{Cint}, Ptr{Cint},
                 Ptr{UInt8}, Ref{Cint}, Ptr{Cint}, Ref{Cint}, Ptr{Cdouble}, Ref{Cint}),
                 buffer, value, iprint, isumm, errors,
@@ -304,7 +306,7 @@ function snopt(fun, x0, lb, ub, options;
     end
 
     # --- set memory requirements --- #
-    ccall( (:snmema_, snoptlib), Void,
+    ccall( (:snmema_, snoptlib), Nothing,
         (Ref{Cint}, Ref{Cint}, Ref{Cint}, Ref{Cint}, Ref{Cint}, Ref{Cint}, Ref{Cint},
         Ref{Cint}, Ref{Cint}, Ref{Cint},
         Ptr{UInt8}, Ref{Cint}, Ref{Cint}, Ref{Cint}, Ref{Cdouble}, Ref{Cint}),
@@ -326,7 +328,7 @@ function snopt(fun, x0, lb, ub, options;
     for (key,value) in zip(memkey,memvalue)
         buffer = string(key, repeat(" ", 55-length(key)))  # buffer length is 55 so pad with space.
         errors[1] = 0
-        ccall( (:snseti_, snoptlib), Void,
+        ccall( (:snseti_, snoptlib), Nothing,
             (Ptr{UInt8}, Ref{Cint}, Ref{Cint}, Ref{Cint}, Ptr{Cint},
             Ptr{UInt8}, Ref{Cint}, Ptr{Cint}, Ref{Cint}, Ptr{Cdouble}, Ref{Cint}),
             buffer, value, iprint, isumm, errors,
@@ -335,9 +337,9 @@ function snopt(fun, x0, lb, ub, options;
 
     # --- call snopta ----
 
-    ccall( (:snopta_, snoptlib), Void,
+    ccall( (:snopta_, snoptlib), Nothing,
         (Ref{Cint}, Ref{Cint}, Ref{Cint}, Ref{Cint}, Ref{Cint}, Ref{Cdouble},
-        Ref{Cint}, Ptr{UInt8}, Ptr{Void}, Ptr{Cint}, Ptr{Cint}, Ref{Cint},
+        Ref{Cint}, Ptr{UInt8}, Ptr{Nothing}, Ptr{Cint}, Ptr{Cint}, Ref{Cint},
         Ref{Cint}, Ptr{Cdouble}, Ptr{Cint}, Ptr{Cint}, Ref{Cint}, Ref{Cint},
         Ptr{Cdouble}, Ptr{Cdouble}, Ptr{UInt8}, Ptr{Cdouble}, Ptr{Cdouble},
         Ptr{UInt8}, Ptr{Cdouble}, Ptr{Cint}, Ptr{Cdouble}, Ptr{Cdouble}, Ptr{Cint},
@@ -358,7 +360,7 @@ function snopt(fun, x0, lb, ub, options;
     # println("done")
 
     # close output files
-    ccall( (:closefiles_, snoptlib), Void,
+    ccall( (:closefiles_, snoptlib), Nothing,
         (Ref{Cint}, Ref{Cint}),
         iprint, isumm)
 
