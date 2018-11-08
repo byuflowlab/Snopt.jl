@@ -3,12 +3,12 @@ Julia interface to SNOPT (must obtain a licensed copy of SNOPT separately).
 
 ### To Install
 
-1. Clone the repo:
+1. Checkout the repo for development:
 ```julia
-Pkg.clone(...)
+(v1.0) pkg> dev https://github.com/byuflowlab/Snopt.jl.git
 ```
 
-2. Copy your SNOPT source files into ~/.julia/v.../Snopt/deps/src  (or wherever you cloned the repo to).
+2. Copy your SNOPT source files into ~/.julia/dev/Snopt/deps/src.
 
 3. You will need to make a couple of changes to subroutine sn02lib.f. Function snSet, snSeti, and snSetr require the following changes:
 
@@ -24,13 +24,13 @@ Pkg.clone(...)
 
 5. Compile the fortran code.
 ```julia
-Pkg.build("Snopt")
+(v1.0) pkg> build Snopt
 ```
 
 ## Run tests
 
 ```julia
-Pkg.test("Snopt")
+(v1.0) pkg> test Snopt
 ```
 
 ## To Use
