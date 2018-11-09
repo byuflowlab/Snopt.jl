@@ -191,7 +191,7 @@ function snopt(fun, x0, lb, ub, options;
     Fupp = zeros(nF)  # TODO: currently c <= 0, but perhaps change
 
     if !isempty(ceq) #equality constraints
-        Flow[nF - length(ceq) + 1 : nF] = 0.0
+        Flow[nF - length(ceq) + 1 : nF] .= 0.0
     end
 
     # names
