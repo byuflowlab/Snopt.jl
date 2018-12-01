@@ -1,7 +1,9 @@
 if Sys.isunix()
     suffix = Sys.isapple() ? "dylib" : "so"
     cd(joinpath(dirname(@__FILE__), "src"))
-    rm("libsnopt.$suffix")
+    if isfile("libsnopt.$suffix")
+        rm("libsnopt.$suffix")
+    end
     try
         run(`make FC=ifort SUFFIX=$suffix`)
     catch
