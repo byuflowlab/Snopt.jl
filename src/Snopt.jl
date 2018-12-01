@@ -257,7 +257,6 @@ function snopt(fun, x0, lb, ub, options;
         Ref{Cint}, Ptr{Cdouble}, Ref{Cint}),
         iprint, isumm, cw, ltmpcw, iw,
         ltmpiw, rw, ltmprw)
-    # println("here")
 
     # --- set options ----
     errors = Cint[0]
