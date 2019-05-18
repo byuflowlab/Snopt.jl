@@ -2,7 +2,7 @@ module Snopt
 
 export snopt
 
-__precompile__(false)
+# __precompile__(false)
 
 const snoptlib = joinpath(dirname(@__FILE__), "../deps/src/libsnopt")
 
@@ -45,7 +45,7 @@ const PRINTNUM = 18
 const SUMNUM = 19
 
 # callback function
-function objcon_wrapper(status_::Ptr{Int32}, n::Int32, x_::Ptr{Cdouble},
+function objcon_wrapper(objcon, status_::Ptr{Int32}, n::Int32, x_::Ptr{Cdouble},
     needf::Int32, nF::Int32, f_::Ptr{Cdouble}, needG::Int32, lenG::Int32,
     G_::Ptr{Cdouble}, cu::Ptr{UInt8}, lencu::Int32, iu::Ptr{Cint},
     leniu::Int32, ru_::Ptr{Cdouble}, lenru::Int32)
@@ -130,19 +130,12 @@ function objcon_wrapper(status_::Ptr{Int32}, n::Int32, x_::Ptr{Cdouble},
 
 end
 
-# c wrapper to callback function
-const usrfun = @cfunction(objcon_wrapper, Nothing, (Ptr{Cint}, Ref{Cint}, Ptr{Cdouble},
-    Ref{Cint}, Ref{Cint}, Ptr{Cdouble}, Ref{Cint}, Ref{Cint}, Ptr{Cdouble},
-    Ptr{UInt8}, Ref{Cint}, Ptr{Cint}, Ref{Cint}, Ptr{Cdouble}, Ref{Cint}))
-
-
-
 # main call to snopt
-function snopt(fun, x0, lb, ub, options;
+function snopt(objcon, x0, lb, ub, options;
                printfile = "snopt-print.out", sumfile = "snopt-summary.out")
 
     # call function
-    res = fun(x0)
+    res = objcon(x0)
     if (length(res) == 3) || (length(res) == 5)
         J, c, _ = res
         ceq = Float64[]
@@ -150,8 +143,21 @@ function snopt(fun, x0, lb, ub, options;
         J, c, ceq, _ = res
     end
 
-    # TODO: there is a probably a better way than to use a global
-    global objcon = fun
+    objcon_wrapped = function(status_::Ptr{Int32}, n::Int32, x_::Ptr{Cdouble},
+        needf::Int32, nF::Int32, f_::Ptr{Cdouble}, needG::Int32, lenG::Int32,
+        G_::Ptr{Cdouble}, cu::Ptr{UInt8}, lencu::Int32, iu::Ptr{Cint},
+        leniu::Int32, ru_::Ptr{Cdouble}, lenru::Int32)
+
+        objcon_wrapper(objcon, status_, n, x_, needf, nF, f_, needG, lenG,
+            G_, cu, lencu, iu, leniu, ru_, lenru)
+
+        return nothing
+    end
+
+    # c wrapper to callback function
+    usrfun = @cfunction($objcon_wrapped, Nothing, (Ptr{Cint}, Ref{Cint}, Ptr{Cdouble},
+        Ref{Cint}, Ref{Cint}, Ptr{Cdouble}, Ref{Cint}, Ref{Cint}, Ptr{Cdouble},
+        Ptr{UInt8}, Ref{Cint}, Ptr{Cint}, Ref{Cint}, Ptr{Cdouble}, Ref{Cint}))
 
     # TODO: set a timer
 
