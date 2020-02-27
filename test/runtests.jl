@@ -1,5 +1,6 @@
 using Snopt
 using Test
+using SparseArrays
 
 
 # -----------------------------------------
@@ -221,3 +222,95 @@ xopt, fopt, info = snopt(barnesgrad, x0, lb, ub, options)
 @test info == "Finished successfully: optimality conditions satisfied"
 
 end # barnesgrad test set
+
+
+
+# -----------------------------------------
+
+@testset "sparsederiv" begin
+
+
+function sparsegrad(x)
+
+    f = x[1]^2 - x[2]
+
+    # --- constraints ---
+
+    c = zeros(2)
+    c[1] = x[2] - 2*x[1]
+    c[2] = -x[2]
+
+    # --- derivatives of f ---
+
+    dfdx = [2*x[1]; -1.0]
+
+
+    # --- derivatives of c ---
+
+    dcdx = zeros(2, 2)
+    dcdx[1, 1] = -2.0
+    dcdx[1, 2] = 1.0
+    dcdx[2, 1] = 0.0
+    dcdx[2, 2] = -1.0
+    dcdx = sparse(dcdx)
+
+    fail = false
+
+    return f, c, dfdx, dcdx, fail
+
+end
+
+
+x0 = [0.0, 0.0]
+lb = [-10.0, -10.0]
+ub = [10.0, 10.0]
+options = Dict{String, Any}()
+options["Derivative option"] = 1
+options["Verify level"] = 1
+
+xopt, fopt, info = snopt(sparsegrad, x0, lb, ub, options)
+
+@test isapprox(xopt[1], 1.0; atol=1e-6)
+@test isapprox(xopt[2], 2.0; atol=1e-6)
+@test isapprox(fopt, -1.0; atol=1e-6)
+@test info == "Finished successfully: optimality conditions satisfied"
+
+
+function sparsegrad2(x)
+
+    f = x[1]^2 - x[2]
+
+    # --- constraints ---
+
+    c = zeros(2)
+    c[1] = x[2] - 2*x[1]
+    c[2] = 3 - x[2]
+
+    # --- derivatives of f ---
+
+    dfdx = [2*x[1]; -1.0]
+
+
+    # --- derivatives of c ---
+
+    dcdx = zeros(2, 2)
+    dcdx[1, 1] = -2.0
+    dcdx[1, 2] = 1.0
+    dcdx[2, 1] = 0.0
+    dcdx[2, 2] = -1.0
+    dcdx = sparse(dcdx)
+
+    fail = false
+
+    return f, c, dfdx, dcdx, fail
+
+end
+
+xopt, fopt, info = snopt(sparsegrad2, x0, lb, ub, options)
+
+@test isapprox(xopt[1], 1.5; atol=1e-6)
+@test isapprox(xopt[2], 3.0; atol=1e-6)
+@test isapprox(fopt, -0.75; atol=1e-6)
+@test info == "Finished successfully: optimality conditions satisfied"
+
+end # sparse test set

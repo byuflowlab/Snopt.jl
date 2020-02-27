@@ -1,5 +1,7 @@
 module Snopt
 
+using SparseArrays
+
 export snopt
 
 # __precompile__(false)
@@ -76,6 +78,7 @@ function objcon_wrapper(objcon, status_::Ptr{Int32}, n::Int32, x_::Ptr{Cdouble},
     elseif length(res) == 5
         J, c, gJ, gc, fail = res
         ceq = Float64[]
+        gceq = spzeros(1, 1)
         gradprovided = true
     else
         J, c, ceq, gJ, gc, gceq, fail = res
@@ -101,19 +104,37 @@ function objcon_wrapper(objcon, status_::Ptr{Int32}, n::Int32, x_::Ptr{Cdouble},
             unsafe_store!(G_, gJ[j], j)
         end
 
-        k = n+1
-        for i = 2 : nF - length(ceq)
-            for j = 1:n
-                unsafe_store!(G_, gc[i-1, j], k)
-                k += 1
+        if typeof(gc) <: SparseMatrixCSC  # check if sparse
+
+            k = n
+            _, _, Vsp = findnz(gc)
+            for i = 1:length(Vsp)
+                unsafe_store!(G_, Vsp[i], k+i)
+            end
+
+            k += length(Vsp)
+            _, _, Vsp = findnz(gceq)
+            for i = 1:length(Vsp)
+                unsafe_store!(G_, Vsp[i], k+i)
+            end
+
+        else
+
+            k = n+1
+            for i = 2 : nF - length(ceq)
+                for j = 1:n
+                    unsafe_store!(G_, gc[i-1, j], k)
+                    k += 1
+                end
+            end
+            for i = nF - length(ceq) + 1 : nF
+                for j = 1:n
+                    unsafe_store!(G_, gceq[i-length(c)-1, j], k)
+                    k += 1
+                end
             end
         end
-        for i = nF - length(ceq) + 1 : nF
-            for j = 1:n
-                unsafe_store!(G_, gceq[i-length(c)-1, j], k)
-                k += 1
-            end
-        end
+
     end
 
 
@@ -136,11 +157,21 @@ function snopt(objcon, x0, lb, ub, options;
 
     # call function
     res = objcon(x0)
-    if (length(res) == 3) || (length(res) == 5)
-        J, c, _ = res
+    if length(res) == 3
+        J, c, fail = res
         ceq = Float64[]
+        gradprovided = false
+    elseif length(res) == 4
+        J, c, ceq, fail = res
+        gradprovided = false
+    elseif length(res) == 5
+        J, c, gJ, gc, fail = res
+        ceq = Float64[]
+        gceq = spzeros(1, 1)
+        gradprovided = true
     else
-        J, c, ceq, _ = res
+        J, c, ceq, gJ, gc, gceq, fail = res
+        gradprovided = true
     end
 
     objcon_wrapped = function(status_::Ptr{Int32}, n::Int32, x_::Ptr{Cdouble},
@@ -176,17 +207,48 @@ function snopt(objcon, x0, lb, ub, options;
     lenA = 1
     neA = 0
 
-    # nonlinear constraints (assume dense jacobian for now)
-    lenG = nF*n
+    # derivatives of obj and nonlinear constraints
+    
+    if gradprovided && typeof(gc) <: SparseMatrixCSC  # check if sparse
+        lenG = n + length(gc.nzval) + length(gceq.nzval)
+    else
+        lenG = nF*n
+    end
+
     neG = lenG
     iGfun = Array{Int32}(undef, lenG)
     jGvar = Array{Int32}(undef, lenG)
-    k = 1
-    for i = 1:nF
+
+    if gradprovided && typeof(gc) <: SparseMatrixCSC  # check if sparse
+
+        # objective gradients (assumed dense as it is just a vector)
         for j = 1:n
-            iGfun[k] = i
-            jGvar[k] = j
-            k += 1
+            iGfun[j] = 1
+            jGvar[j] = j
+        end
+
+        idx = n
+        Isp, Jsp, Vsp = findnz(gc)
+        for k = 1:length(Isp)
+            iGfun[idx+k] = Isp[k] + 1
+            jGvar[idx+k] = Jsp[k]
+        end
+
+        idx = n + length(Isp)
+        Isp, Jsp, Vsp = findnz(gceq)
+        for k = 1:length(Isp)
+            iGfun[idx+k] = Isp[k] + 1 + length(c)
+            jGvar[idx+k] = Jsp[k]
+        end
+
+    else
+        k = 1
+        for i = 1:nF
+            for j = 1:n
+                iGfun[k] = i
+                jGvar[k] = j
+                k += 1
+            end
         end
     end
 
