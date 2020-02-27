@@ -223,8 +223,6 @@ xopt, fopt, info = snopt(barnesgrad, x0, lb, ub, options)
 
 end # barnesgrad test set
 
-
-
 # -----------------------------------------
 
 @testset "sparsederiv" begin
@@ -314,3 +312,24 @@ xopt, fopt, info = snopt(sparsegrad2, x0, lb, ub, options)
 @test info == "Finished successfully: optimality conditions satisfied"
 
 end # sparse test set
+
+
+# -----------------------------------------
+
+@testset "matyas" begin
+    function matyas(x)
+        f = 0.26 * (x[1]^2 + x[2]^2) - 0.48 * x[1] * x[2]
+        c = []
+        fail = false
+        return f, c, fail
+    end
+    x0 = [5;7]
+    lb = [-10; -10]
+    ub = [10; 10]
+    options = []
+    xopt, fopt, info = snopt(matyas, x0, lb, ub, options)
+    @test isapprox(xopt[1], 0.0; atol=1e-4)
+    @test isapprox(xopt[2], 0.0; atol=1e-4)
+    @test isapprox(fopt, 0.0; atol=1e-3)
+    @test info == "Finished successfully: optimality conditions satisfied"
+end

@@ -137,7 +137,6 @@ function objcon_wrapper(objcon, status_::Ptr{Int32}, n::Int32, x_::Ptr{Cdouble},
 
     end
 
-
     # check if solutions fails
     if fail
         unsafe_store!(status_, -1, 1)
@@ -253,8 +252,8 @@ function snopt(objcon, x0, lb, ub, options;
     end
 
     # bound constriaints (no infinite bounds for now)
-    xlow = lb
-    xupp = ub
+    xlow = convert(Vector{Cdouble}, lb)
+    xupp = convert(Vector{Cdouble}, ub)
     Flow = -1e20*ones(nF)  # TODO: check Infinite Bound size
     Fupp = zeros(nF)  # TODO: currently c <= 0, but perhaps change
 
@@ -272,7 +271,7 @@ function snopt(objcon, x0, lb, ub, options;
     # Fnames = ["TODOTODO"]
 
     # starting info
-    x = x0
+    x = convert(Vector{Cdouble}, x0)
     xstate = zeros(n)
     xmul = zeros(n)
     F = zeros(nF)
