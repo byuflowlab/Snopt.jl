@@ -154,6 +154,15 @@ end
 function snopt(objcon, x0, lb, ub, options;
                printfile = "snopt-print.out", sumfile = "snopt-summary.out")
 
+    # make sure wrapper uses print file and summary file names if given in options
+    if typeof(options["Print file"]) == String
+        printfile = options["Print file"]
+    end
+
+    if typeof(options["Summary file"]) == String
+        sumfile = options["Summary file"]
+    end
+
     # call function
     res = objcon(x0)
     if length(res) == 3
