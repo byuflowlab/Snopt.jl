@@ -155,11 +155,10 @@ function snopt(objcon, x0, lb, ub, options;
                printfile = "snopt-print.out", sumfile = "snopt-summary.out")
 
     # make sure wrapper uses print file and summary file names if given in options
-    if typeof(options["Print file"]) == String
+    if haskey(options, "Print file")
         printfile = options["Print file"]
     end
-
-    if typeof(options["Summary file"]) == String
+    if haskey(options, "Summary file")
         sumfile = options["Summary file"]
     end
 
