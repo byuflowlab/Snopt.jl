@@ -36,3 +36,5 @@ deps/src
 # Julia
 Manifest.toml
 deps/build.log
+
+.DS_Store

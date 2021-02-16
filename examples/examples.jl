@@ -1,11 +1,27 @@
 using Snopt
-using Test
 using SparseArrays
 
+# ---- unconstrained, no dervatives provided. -----
 
-# -----------------------------------------
+function matyas(g, df, dg, x, deriv)
+    f = 0.26 * (x[1]^2 + x[2]^2) - 0.48 * x[1] * x[2]
+    fail = false
+    return f, fail
+end
+x0 = [5.0; 7]
+lx = [-10.0; -10]
+ux = [10.0; 10]
+lg = []
+ug = []
+rows = []
+cols = [] 
+options = Dict(
+    "Derivative option" => 0
+)
+xopt, fopt, info, out = snopta(matyas, x0, lx, ux, lg, ug, rows, cols, options=options)
 
-@testset "rosenbrock" begin
+
+# ---- unconstrained, providing gradient -----
 
 function rosenbrock(g, df, dg, x, deriv)
     f = (1 - x[1])^2 + 100*(x[2] - x[1]^2)^2
@@ -30,16 +46,8 @@ cols = []
 
 xopt, fopt, info, out = snopta(rosenbrock, x0, lx, ux, lg, ug, rows, cols)
 
-@test isapprox(xopt[1], 1.0; atol=1e-6)
-@test isapprox(xopt[2], 1.0; atol=1e-6)
-@test isapprox(fopt, 0.0; atol=1e-8)
-@test info == "Finished successfully: optimality conditions satisfied"
 
-end  # rosenbrock test set
-
-# -----------------------------------------
-
-@testset "barnes" begin
+# --------- constrained, not providing derivatives ------
 
 function barnes(g, df, dg, x, deriv)
 
@@ -104,18 +112,10 @@ options = Dict(
 )
 
 xopt, fopt, info, out = snopta(barnes, x0, lx, ux, lg, ug, rows, cols, options=options)
-@test isapprox(xopt[1], 49.5263; atol=1e-4)
-@test isapprox(xopt[2], 19.6228; atol=1e-4)
-@test isapprox(fopt, -31.6368; atol=1e-2)
-@test info == "Finished successfully: optimality conditions satisfied"
 
 
-end  # barnes test set
 
-
-# -----------------------------------------
-
-@testset "barnesgrad" begin
+# ----- constrained, providing derivatives (dense jacobian) ---------
 
 
 function barnesgrad(g, df, dg, x, deriv)
@@ -214,17 +214,8 @@ options = Dict(
 
 xopt, fopt, info, out = snopta(barnesgrad, x0, lx, ux, lg, ug, rows, cols, options=options)
 
-@test isapprox(xopt[1], 49.5263; atol=1e-4)
-@test isapprox(xopt[2], 19.6228; atol=1e-4)
-@test isapprox(fopt, -31.6368; atol=1e-4)
-@test info == "Finished successfully: optimality conditions satisfied"
 
-end # barnesgrad test set
-
-# -----------------------------------------
-
-@testset "sparsederiv" begin
-
+# ----- constrained, providing derivatives (sparse jacobian) ---------
 
 function sparsegrad(g, df, dg, x, deriv)
 
@@ -265,68 +256,42 @@ options = Dict(
 
 xopt, fopt, info, out = snopta(sparsegrad, x0, lx, ux, lg, ug, rows, cols, options=options)
 
-@test isapprox(xopt[1], 1.0; atol=1e-6)
-@test isapprox(xopt[2], 2.0; atol=1e-6)
-@test isapprox(fopt, -1.0; atol=1e-6)
-@test info == "Finished successfully: optimality conditions satisfied"
+
+# ------- adding names in output file ------
+
+x0 = [12.0; 10.0]
+lx = [0.0; 0.0]
+ux = [65.0; 70.0]
+lg = -Inf*ones(3)
+ug = zeros(3)
+
+rows = [1, 2, 3, 1, 2, 3]
+cols = [1, 1, 1, 2, 2, 2]
+names = Snopt.Names("howdy", ["x1", "x2"], ["obj", "g1", "g2", "g3"])
+xopt, fopt, info, out = snopta(barnesgrad, x0, lx, ux, lg, ug, rows, cols, names=names) 
 
 
-function sparsegrad2(g, df, dg, x, deriv)
+# -------- warm start --------------
 
-    f = x[1]^2 - x[2]
-    fail = false
+x0 = [12.0; 10.0]
+lx = [0.0; 0.0]
+ux = [65.0; 70.0]
+lg = -Inf*ones(3)
+ug = zeros(3)
+rows = [1, 2, 3, 1, 2, 3]
+cols = [1, 1, 1, 2, 2, 2]
 
-    # --- constraints ---
-
-    g[1] = x[2] - 2*x[1]
-    g[2] = 3 - x[2]
-
-    # --- derivatives of f ---
-
-    df[1] = 2*x[1]
-    df[2] = -1.0
-
-    # --- derivatives of g ---
-
-    dg[1] = -2.0
-    dg[2] = 1.0
-    dg[3] = -1.0
-
-    return f, fail
-
-end
-
-xopt, fopt, info, out = snopta(sparsegrad2, x0, lx, ux, lg, ug, rows, cols, options=options)
-
-@test isapprox(xopt[1], 1.5; atol=1e-6)
-@test isapprox(xopt[2], 3.0; atol=1e-6)
-@test isapprox(fopt, -0.75; atol=1e-6)
-@test info == "Finished successfully: optimality conditions satisfied"
-
-end # sparse test set
+# artificially limiting the major iterations so we can restart
+options = Dict(
+    "Major iterations limit" => 15
+)
 
 
-# -----------------------------------------
+xopt, fopt, info, out = snopta(barnesgrad, x0, lx, ux, lg, ug, rows, cols, options=options) 
+println("major iter = ", out.major_iter)
 
-@testset "matyas" begin
-    function matyas(g, df, dg, x, deriv)
-        f = 0.26 * (x[1]^2 + x[2]^2) - 0.48 * x[1] * x[2]
-        fail = false
-        return f, fail
-    end
-    x0 = [5.0; 7]
-    lx = [-10.0; -10]
-    ux = [10.0; 10]
-    lg = []
-    ug = []
-    rows = []
-    cols = [] 
-    options = Dict(
-        "Derivative option" => 0
-    )
-    xopt, fopt, info, out = snopta(matyas, x0, lx, ux, lg, ug, rows, cols, options=options)
-    @test isapprox(xopt[1], 0.0; atol=1e-4)
-    @test isapprox(xopt[2], 0.0; atol=1e-4)
-    @test isapprox(fopt, 0.0; atol=1e-3)
-    @test info == "Finished successfully: optimality conditions satisfied"
-end
+# warm start from where we stopped
+xopt, fopt, info, out = snopta(barnesgrad, x0, lx, ux, lg, ug, rows, cols, start=out.warm) 
+println("major iter = ", out.major_iter)
+
+

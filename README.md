@@ -1,5 +1,11 @@
 # Snopt.jl
-Julia interface to SNOPT (must obtain a licensed copy of SNOPT separately).
+
+Julia interface to SNOPT v7 (must obtain a licensed copy of SNOPT separately).
+
+This package is a basic wrapper to the Fortran functions. Rather than using this package directly, for most use cases we recommend using SNOW.jl, which provides a more convenient and unified interface to multiple optimizers.  However, this package can be used directly if desired. While we prioritize documentation for SNOW.jl, there are detailed docstrings for each function, and multiple examples in the example folder.
+
+Note that v0.2 is a breaking change compared to v0.1.  It was rewritten to expose all the inputs/outputs/functionality of snOptA.
+
 
 ### To Install
 
