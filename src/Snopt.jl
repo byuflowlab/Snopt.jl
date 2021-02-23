@@ -2,338 +2,255 @@ module Snopt
 
 using SparseArrays
 
-export snopt
-
-# __precompile__(false)
+export snopta
 
 const snoptlib = joinpath(dirname(@__FILE__), "../deps/src/libsnopt")
 
-const codes = Dict{Int64, String}()
-codes[1] = "Finished successfully: optimality conditions satisfied"
-codes[2] = "Finished successfully: feasible point found"
-codes[3] = "Finished successfully: requested accuracy could not be achieved"
-codes[11] = "The problem appears to be infeasible: infeasible linear constraints"
-codes[12] = "The problem appears to be infeasible: infeasible linear equalities"
-codes[13] = "The problem appears to be infeasible: nonlinear infeasibilities minimized"
-codes[14] = "The problem appears to be infeasible: infeasibilities minimized"
-codes[15] = "The problem appears to be infeasible: infeasible linear constraints in QP subproblem"
-codes[21] = "The problem appears to be unbounded: unbounded objective"
-codes[22] = "The problem appears to be unbounded: constraint violation limit reached"
-codes[31] = "Resource limit error: iteration limit reached"
-codes[32] = "Resource limit error: major iteration limit reached"
-codes[33] = "Resource limit error: the superbasics limit is too small"
-codes[41] =  "Terminated after numerical difficulties: current point cannot be improved"
-codes[42] =  "Terminated after numerical difficulties: singular basis"
-codes[43] =  "Terminated after numerical difficulties: cannot satisfy the general constraints"
-codes[44] =  "Terminated after numerical difficulties: ill-conditioned null-space basis"
-codes[51] =  "Error in the user-supplied functions: incorrect objective derivatives"
-codes[52] =  "Error in the user-supplied functions: incorrect constraint derivatives"
-codes[61] =  "Undefined user-supplied functions: undefined function at the first feasible point"
-codes[62] =  "Undefined user-supplied functions: undefined function at the initial point"
-codes[63] =  "Undefined user-supplied functions: unable to proceed into undefined region"
-codes[71] =  "User requested termination: terminated during function evaluation "
-codes[74] =  "User requested termination: terminated from monitor routine"
-codes[81] =  "Insufficient storage allocated: work arrays must have at least 500 elements"
-codes[82] =  "Insufficient storage allocated: not enough character storage"
-codes[83] =  "Insufficient storage allocated: not enough integer storage"
-codes[84] =  "Insufficient storage allocated: not enough real storage"
-codes[91] =  "Input arguments out of range: invalid input argument"
-codes[92] =  "Input arguments out of range: basis file dimensions do not match this problem"
-codes[141] =  "System error: wrong number of basic variables"
-codes[142] =  "System error: error in basis package"
-
+const codes = Dict(
+1 => "Finished successfully: optimality conditions satisfied",
+2 => "Finished successfully: feasible point found",
+3 => "Finished successfully: requested accuracy could not be achieved",
+11 => "The problem appears to be infeasible: infeasible linear constraints",
+12 => "The problem appears to be infeasible: infeasible linear equalities",
+13 => "The problem appears to be infeasible: nonlinear infeasibilities minimized",
+14 => "The problem appears to be infeasible: infeasibilities minimized",
+15 => "The problem appears to be infeasible: infeasible linear constraints in QP subproblem",
+21 => "The problem appears to be unbounded: unbounded objective",
+22 => "The problem appears to be unbounded: constraint violation limit reached",
+31 => "Resource limit error: iteration limit reached",
+32 => "Resource limit error: major iteration limit reached",
+33 => "Resource limit error: the superbasics limit is too small",
+41 => "Terminated after numerical difficulties: current point cannot be improved",
+42 => "Terminated after numerical difficulties: singular basis",
+43 => "Terminated after numerical difficulties: cannot satisfy the general constraints",
+44 => "Terminated after numerical difficulties: ill-conditioned null-space basis",
+51 => "Error in the user-supplied functions: incorrect objective derivatives",
+52 => "Error in the user-supplied functions: incorrect constraint derivatives",
+61 => "Undefined user-supplied functions: undefined function at the first feasible point",
+62 => "Undefined user-supplied functions: undefined function at the initial point",
+63 => "Undefined user-supplied functions: unable to proceed into undefined region",
+71 => "User requested termination: terminated during function evaluation ",
+74 => "User requested termination: terminated from monitor routine",
+81 => "Insufficient storage allocated: work arrays must have at least 500 elements",
+82 => "Insufficient storage allocated: not enough character storage",
+83 => "Insufficient storage allocated: not enough integer storage",
+84 => "Insufficient storage allocated: not enough real storage",
+91 => "Input arguments out of range: invalid input argument",
+92 => "Input arguments out of range: basis file dimensions do not match this problem",
+141 => "System error: wrong number of basic variables",
+142 => "System error: error in basis package"
+)
 
 const PRINTNUM = 18
 const SUMNUM = 19
 
-# callback function
-function objcon_wrapper(objcon, status_::Ptr{Int32}, n::Int32, x_::Ptr{Cdouble},
-    needf::Int32, nF::Int32, f_::Ptr{Cdouble}, needG::Int32, lenG::Int32,
-    G_::Ptr{Cdouble}, cu::Ptr{UInt8}, lencu::Int32, iu::Ptr{Cint},
-    leniu::Int32, ru_::Ptr{Cdouble}, lenru::Int32)
 
-    status = unsafe_load(status_)
+"""
+    Names(prob, xnames, fnames)
 
-    # check if solution finished, no need to calculate more
-    if status >= 2
-        return
-    end
+Convenience to put custom names in output files.
+Arguments to variables of same names in snOptA. 
+Use strings and vectors of strings.
+"""
+struct Names{TS}
+    prob::TS
+    xnames::Vector{TS}
+    fnames::Vector{TS}
+end
 
-    # unpack design variables
-    x = zeros(n)
-    for i = 1:n
-        x[i] = unsafe_load(x_, i)
-    end
-    # x = unsafe_load(x_)  # TODO: test this
+"""
+    Names()
 
-    # call function
-    res = objcon(x)
-    if length(res) == 3
-        J, c, fail = res
-        ceq = Float64[]
-        gradprovided = false
-    elseif length(res) == 4
-        J, c, ceq, fail = res
-        gradprovided = false
-    elseif length(res) == 5
-        J, c, gJ, gc, fail = res
-        ceq = Float64[]
-        gceq = spzeros(1, 1)
-        gradprovided = true
+Default names (uses snopt defaults for xnames, fnames)
+"""
+Names() = Names("Opt Prob", [""], [""])
+
+
+# Internal: truncater or pad string to 8 characters
+function eightchar(name)
+    n = length(name)
+    if n >= 8
+        return name[1:8]
     else
-        J, c, ceq, gJ, gc, gceq, fail = res
-        gradprovided = true
+        return string(name, repeat(" ", 8-n))
+    end
+end
+
+# Internal: struct of names in fortran format
+struct NamesFStyle{TC}
+    prob::Vector{TC}
+    xnames::Vector{TC}
+    fnames::Vector{TC}
+end
+
+# Internal: convert a list of names to fortran format
+function process_list_of_names(names)
+    allnames = ""
+    for name in names
+        allnames *= eightchar(name)
+    end
+    return Vector{Cuchar}(allnames)
+end
+
+# Internal: convert the names to fortran format
+function processnames(names)
+    
+    prob = Vector{Cuchar}(eightchar(names.prob))
+
+    xnames = process_list_of_names(names.xnames)
+    fnames = process_list_of_names(names.fnames)
+    
+    return NamesFStyle(prob, xnames, fnames)
+end
+
+"""
+    Start(start, ns, xstate, fstate, x, f, xmul, fmul)
+
+A starting point for optimization.  
+Usually not used directly. Instead use ColdStart or WarmStart.
+Arguments correspond to the same names in snOptA.
+"""
+struct Start{TI, TF}
+    start::TI
+    ns::TI
+    xstate::Vector{TI}
+    fstate::Vector{TI}
+    x::Vector{TF}
+    f::Vector{TF}
+    xmul::Vector{TF}
+    fmul::Vector{TF}
+end
+
+"""
+    ColdStart(x0, nf)
+
+A cold start.
+
+# Arguments
+- `x0::Vector{Float64}`: starting point
+- `nf::Int64`: number of output functions (obj + constraints)
+"""
+function ColdStart(x0, nf)
+    nx = length(x0)
+    return Start(Cint(0), Cint(0),
+        zeros(Cint, nx), zeros(Cint, nx), 
+        x0, zeros(nf), zeros(nf), zeros(nf)
+        )
+end
+
+"""
+    WarmStart(ns, xstate, fstate, x, f, xmul, fmul)
+
+A warm start.  Arguments correspond to variables of same names in snOptA.
+One of the outputs of snopta is a WarmStart object that can be reused as an input.
+"""
+WarmStart(ns, xstate, fstate, x, f, xmul, fmul) = Start(
+    Cint(2), ns, xstate, fstate, x, f, xmul, fmul)
+
+# internal use: workspace vectors
+mutable struct Workspace{TI,TF,TS}
+    lencw::TI
+    cw::Vector{TS}
+    leniw::TI
+    iw::Vector{TI}
+    lenrw::TI
+    rw::Vector{TF}
+end
+
+# internal use: initialize workspace arrays from lengths
+Workspace(lenc, leni, lenr) = Workspace(
+    Cint(lenc), Array{Cuchar}(undef, lenc*8),
+    Cint(leni), Array{Cint}(undef, leni),
+    Cint(lenr), Array{Float64}(undef, lenr)
+)
+
+"""
+    Outputs(gstar, iterations, major_iter, run_time, nInf, sInf, warm)
+
+Outputs returned by the snopta function.
+
+# Arguments
+- `gstar::Vector{Float}`: constraints evaluated at the optimal point
+- `iterations::Int`: total iteration count
+- `major_iter::Int`: number of major iterations
+- `run_time::Float`: solve time as reported by snopt
+- `nInf::Int`: number of infeasibility constraints, see snopta docs
+- `sInf::Float`: sum of infeasibility constraints, see snopta docs
+- `warm::WarmStart`: a warm start object that can be used in a restart.
+"""
+struct Outputs{TF,TI,TW}
+    gstar::Vector{TF}
+    iterations::TI
+    major_iter::TI
+    run_time::TF
+    nInf::TI
+    sInf::TF
+    warm::TW
+end
+
+
+# wrapper for snInit
+function sninit(nx, nf)
+
+    # temporary working arrays
+    minlen = 500
+    lencw = minlen
+    leniw = minlen + 100*(nx + nf)
+    lenrw = minlen + 200*(nx + nf)
+    w = Workspace(lencw, leniw, lenrw)
+
+    ccall( (:sninit_, snoptlib), Nothing,
+        (Ref{Cint}, Ref{Cint}, Ptr{Cuchar}, Ref{Cint}, Ptr{Cint},
+        Ref{Cint}, Ptr{Cdouble}, Ref{Cint}),
+        PRINTNUM, SUMNUM, w.cw, w.lencw, w.iw,
+        w.leniw, w.rw, w.lenrw)
+
+    return w
+end
+
+
+# wrapper for openfiles. not defined with snopt, fortran file supplied in repo (from pyoptsparse)
+function openfiles(printfile, sumfile)
+
+    # open files for printing (not part of snopt distribution)
+    printerr = Cint[0]
+    sumerr = Cint[0]
+    ccall( (:openfiles_, snoptlib), Nothing,
+        (Ref{Cint}, Ref{Cint}, Ptr{Cint}, Ptr{Cint}, Ptr{Cuchar}, Ptr{Cuchar}),
+        PRINTNUM, SUMNUM, printerr, sumerr, printfile, sumfile)
+
+    if printerr[1] != 0
+        @warn "failed to open print file"
+    end
+    if sumerr[1] != 0
+        @warn "failed to open summary file"
     end
 
-    # copy obj and con values into C pointer
-    unsafe_store!(f_, J, 1)
-    for i = 2 : nF - length(ceq)
-        unsafe_store!(f_, c[i-1], i)
-    end
-    if !isempty(ceq)
-        for i = nF - length(ceq) + 1 : nF
-            unsafe_store!(f_, ceq[i-length(c)-1], i)
-        end
-    end
+    return nothing
+end
 
-    # gradients  TODO: separate gradient computation in interface?
-    if needG > 0 && gradprovided
+# wrapper for closefiles. not defined with snopt, fortran file supplied in repo (from pyoptsparse)
+function closefiles()
+    # close output files
+    ccall( (:closefiles_, snoptlib), Nothing,
+        (Ref{Cint}, Ref{Cint}),
+        PRINTNUM, SUMNUM)
 
-        for j = 1:n
-            # gradients of f
-            unsafe_store!(G_, gJ[j], j)
-        end
+    return nothing
+end
 
-        if typeof(gc) <: SparseMatrixCSC  # check if sparse
-
-            k = n
-            _, _, Vsp = findnz(gc)
-            for i = 1:length(Vsp)
-                unsafe_store!(G_, Vsp[i], k+i)
-            end
-
-            k += length(Vsp)
-            _, _, Vsp = findnz(gceq)
-            for i = 1:length(Vsp)
-                unsafe_store!(G_, Vsp[i], k+i)
-            end
-
-        else
-
-            k = n+1
-            for i = 2 : nF - length(ceq)
-                for j = 1:n
-                    unsafe_store!(G_, gc[i-1, j], k)
-                    k += 1
-                end
-            end
-            for i = nF - length(ceq) + 1 : nF
-                for j = 1:n
-                    unsafe_store!(G_, gceq[i-length(c)-1, j], k)
-                    k += 1
-                end
-            end
-        end
-
-    end
-
-    # check if solutions fails
-    if fail
-        unsafe_store!(status_, -1, 1)
-    end
-
+# wrapper for flushfiles. not defined with snopt, fortran file supplied in repo (from pyoptsparse)
+function flushfiles()
     # flush output files to see progress
     ccall( (:flushfiles_, snoptlib), Nothing,
         (Ref{Cint}, Ref{Cint}),
         PRINTNUM, SUMNUM)
 
-
+    return nothing
 end
 
-# main call to snopt
-function snopt(objcon, x0, lb, ub, options;
-               printfile = "snopt-print.out", sumfile = "snopt-summary.out")
-
-    # make sure wrapper uses print file and summary file names if given in options
-    if !isempty(options)
-        if haskey(options, "Print file")
-            printfile = options["Print file"]
-        end
-        if haskey(options, "Summary file")
-            sumfile = options["Summary file"]
-        end
-    end
-
-    # call function
-    res = objcon(x0)
-    if length(res) == 3
-        J, c, fail = res
-        ceq = Float64[]
-        gradprovided = false
-    elseif length(res) == 4
-        J, c, ceq, fail = res
-        gradprovided = false
-    elseif length(res) == 5
-        J, c, gJ, gc, fail = res
-        ceq = Float64[]
-        gceq = spzeros(1, 1)
-        gradprovided = true
-    else
-        J, c, ceq, gJ, gc, gceq, fail = res
-        gradprovided = true
-    end
-
-    objcon_wrapped = function(status_::Ptr{Int32}, n::Int32, x_::Ptr{Cdouble},
-        needf::Int32, nF::Int32, f_::Ptr{Cdouble}, needG::Int32, lenG::Int32,
-        G_::Ptr{Cdouble}, cu::Ptr{UInt8}, lencu::Int32, iu::Ptr{Cint},
-        leniu::Int32, ru_::Ptr{Cdouble}, lenru::Int32)
-
-        objcon_wrapper(objcon, status_, n, x_, needf, nF, f_, needG, lenG,
-            G_, cu, lencu, iu, leniu, ru_, lenru)
-
-        return nothing
-    end
-
-    # c wrapper to callback function
-    usrfun = @cfunction($objcon_wrapped, Nothing, (Ptr{Cint}, Ref{Cint}, Ptr{Cdouble},
-        Ref{Cint}, Ref{Cint}, Ptr{Cdouble}, Ref{Cint}, Ref{Cint}, Ptr{Cdouble},
-        Ptr{UInt8}, Ref{Cint}, Ptr{Cint}, Ref{Cint}, Ptr{Cdouble}, Ref{Cint}))
-
-    # TODO: set a timer
-
-
-    # setup
-    Start = 0  # cold start  # TODO: allow warm starts
-    nF = 1 + length(c) + length(ceq)  # 1 objective + constraints
-    n = length(x0)  # number of design variables
-    ObjAdd = 0.0  # no constant term added to objective (user can add themselves if desired)
-    ObjRow = 1  # objective is first thing returned, then constraints
-
-    # linear constraints (none for now)
-    iAfun = Int32[1]
-    jAvar = Int32[1]
-    A = [0.0]  # TODO: change later
-    lenA = 1
-    neA = 0
-
-    # derivatives of obj and nonlinear constraints
-    
-    if gradprovided && typeof(gc) <: SparseMatrixCSC  # check if sparse
-        lenG = n + length(gc.nzval) + length(gceq.nzval)
-    else
-        lenG = nF*n
-    end
-
-    neG = lenG
-    iGfun = Array{Int32}(undef, lenG)
-    jGvar = Array{Int32}(undef, lenG)
-
-    if gradprovided && typeof(gc) <: SparseMatrixCSC  # check if sparse
-
-        # objective gradients (assumed dense as it is just a vector)
-        for j = 1:n
-            iGfun[j] = 1
-            jGvar[j] = j
-        end
-
-        idx = n
-        Isp, Jsp, Vsp = findnz(gc)
-        for k = 1:length(Isp)
-            iGfun[idx+k] = Isp[k] + 1
-            jGvar[idx+k] = Jsp[k]
-        end
-
-        idx = n + length(Isp)
-        Isp, Jsp, Vsp = findnz(gceq)
-        for k = 1:length(Isp)
-            iGfun[idx+k] = Isp[k] + 1 + length(c)
-            jGvar[idx+k] = Jsp[k]
-        end
-
-    else
-        k = 1
-        for i = 1:nF
-            for j = 1:n
-                iGfun[k] = i
-                jGvar[k] = j
-                k += 1
-            end
-        end
-    end
-
-    # bound constriaints (no infinite bounds for now)
-    xlow = convert(Vector{Cdouble}, lb)
-    xupp = convert(Vector{Cdouble}, ub)
-    Flow = -1e20*ones(nF)  # TODO: check Infinite Bound size
-    Fupp = zeros(nF)  # TODO: currently c <= 0, but perhaps change
-
-    if !isempty(ceq) #equality constraints
-        Flow[nF - length(ceq) + 1 : nF] .= 0.0
-    end
-
-    # names
-    Prob = "opt prob"  # problem name TODO: change later
-    nxname = 1  # TODO: change later
-    xnames = Array{UInt8}(undef, nxname, 8)
-    # xnames = ["TODOTODO"]
-    nFname = 1  # TODO: change later
-    Fnames = Array{UInt8}(undef, nFname, 8)
-    # Fnames = ["TODOTODO"]
-
-    # starting info
-    x = convert(Vector{Cdouble}, x0)
-    xstate = zeros(n)
-    xmul = zeros(n)
-    F = zeros(nF)
-    Fstate = zeros(nF)
-    Fmul = zeros(nF)
-    # INFO = 0
-    INFO = Cint[0]
-    mincw = Cint[0]  # TODO: check that these are sufficient
-    miniw = Cint[0]
-    minrw = Cint[0]
-    nS = Cint[0]
-    nInf = Cint[0]
-    sInf = Cdouble[0]
-    lencu = 1
-    cu = Array{UInt8}(undef, lencu, 8)
-    iu = Int32[0]
-    leniu = length(iu)
-    ru = [0.0]
-    lenru = length(ru)
-
-    # open files for printing
-    iprint = PRINTNUM
-    isumm = SUMNUM
-    printerr = Cint[0]
-    sumerr = Cint[0]
-    ccall( (:openfiles_, snoptlib), Nothing,
-        (Ref{Cint}, Ref{Cint}, Ptr{Cint}, Ptr{Cint}, Ptr{UInt8}, Ptr{UInt8}),
-        iprint, isumm, printerr, sumerr, printfile, sumfile)
-    if printerr[1] != 0
-        println("failed to open print file")
-    end
-    if sumerr[1] != 0
-        println("failed to open summary file")
-    end
-
-    # temporary working arrays
-    ltmpcw = 500
-    cw = Array{UInt8}(undef, ltmpcw*8)
-    ltmpiw = 500
-    iw = Array{Int32}(undef, ltmpiw)
-    ltmprw = 500
-    rw = Array{Float64}(undef, ltmprw)
-
-    # compilation command I used (OS X with gfortran):
-    # gfortran -shared -O2 *.f *.f90 -o libsnopt.dylib -fPIC -v
-
-    # --- initialize ----
-    ccall( (:sninit_, snoptlib), Nothing,
-        (Ref{Cint}, Ref{Cint}, Ptr{UInt8}, Ref{Cint}, Ptr{Cint},
-        Ref{Cint}, Ptr{Cdouble}, Ref{Cint}),
-        iprint, isumm, cw, ltmpcw, iw,
-        ltmpiw, rw, ltmprw)
+# wrapper for snSet, snSeti, snSetr
+function setoptions(options, work)
 
     # --- set options ----
     errors = Cint[0]
@@ -343,7 +260,7 @@ function snopt(objcon, x0, lb, ub, options;
         buffer = string(key, repeat(" ", 55-length(key)))  # buffer length is 55 so pad with space.
 
         if length(key) > 55
-            println("warning: invalid option, too long")
+            @warn "invalid option, too long"
             continue
         end
 
@@ -354,95 +271,342 @@ function snopt(objcon, x0, lb, ub, options;
             value = string(value, repeat(" ", 72-length(value)))
 
             ccall( (:snset_, snoptlib), Nothing,
-                (Ptr{UInt8}, Ref{Cint}, Ref{Cint}, Ptr{Cint},
-                Ptr{UInt8}, Ref{Cint}, Ptr{Cint}, Ref{Cint}, Ptr{Cdouble}, Ref{Cint}),
-                value, iprint, isumm, errors,
-                cw, ltmpcw, iw, ltmpiw, rw, ltmprw)
+                (Ptr{Cuchar}, Ref{Cint}, Ref{Cint}, Ptr{Cint},
+                Ptr{Cuchar}, Ref{Cint}, Ptr{Cint}, Ref{Cint}, Ptr{Cdouble}, Ref{Cint}),
+                value, PRINTNUM, SUMNUM, errors,
+                work.cw, work.lencw, work.iw, work.leniw, work.rw, work.lenrw)
 
         elseif isinteger(value)
 
             ccall( (:snseti_, snoptlib), Nothing,
-                (Ptr{UInt8}, Ref{Cint}, Ref{Cint}, Ref{Cint}, Ptr{Cint},
-                Ptr{UInt8}, Ref{Cint}, Ptr{Cint}, Ref{Cint}, Ptr{Cdouble}, Ref{Cint}),
-                buffer, value, iprint, isumm, errors,
-                cw, ltmpcw, iw, ltmpiw, rw, ltmprw)
+                (Ptr{Cuchar}, Ref{Cint}, Ref{Cint}, Ref{Cint}, Ptr{Cint},
+                Ptr{Cuchar}, Ref{Cint}, Ptr{Cint}, Ref{Cint}, Ptr{Cdouble}, Ref{Cint}),
+                buffer, value, PRINTNUM, SUMNUM, errors,
+                work.cw, work.lencw, work.iw, work.leniw, work.rw, work.lenrw)
 
         elseif isreal(value)
 
             ccall( (:snsetr_, snoptlib), Nothing,
-                (Ptr{UInt8}, Ref{Cdouble}, Ref{Cint}, Ref{Cint}, Ptr{Cint},
-                Ptr{UInt8}, Ref{Cint}, Ptr{Cint}, Ref{Cint}, Ptr{Cdouble}, Ref{Cint}),
-                buffer, value, iprint, isumm, errors,
-                cw, ltmpcw, iw, ltmpiw, rw, ltmprw)
-
+                (Ptr{Cuchar}, Ref{Cdouble}, Ref{Cint}, Ref{Cint}, Ptr{Cint},
+                Ptr{Cuchar}, Ref{Cint}, Ptr{Cint}, Ref{Cint}, Ptr{Cdouble}, Ref{Cint}),
+                buffer, value, PRINTNUM, SUMNUM, errors,
+                work.cw, work.lencw, work.iw, work.leniw, work.rw, work.lenrw)
         end
 
-        # println(errors[1])
+        if errors[1] > 0
+            @warn errors[1], " errors encountered while setting options"
+        end
 
     end
+    
+    return nothing
+end
 
+
+# wrapper for snMemA
+function setmemory(INFO, nf, nx, nxname, nfname, neA, neG, work)
+
+    mincw = Cint[0]
+    miniw = Cint[0]
+    minrw = Cint[0]
+    
     # --- set memory requirements --- #
     ccall( (:snmema_, snoptlib), Nothing,
         (Ref{Cint}, Ref{Cint}, Ref{Cint}, Ref{Cint}, Ref{Cint}, Ref{Cint}, Ref{Cint},
         Ref{Cint}, Ref{Cint}, Ref{Cint},
-        Ptr{UInt8}, Ref{Cint}, Ref{Cint}, Ref{Cint}, Ref{Cdouble}, Ref{Cint}),
-        INFO, nF, n, nxname, nFname, neA, neG,
+        Ptr{Cuchar}, Ref{Cint}, Ref{Cint}, Ref{Cint}, Ref{Cdouble}, Ref{Cint}),
+        INFO, nf, nx, nxname, nfname, neA, neG,
         mincw, miniw, minrw,
-        cw, ltmpcw, iw, ltmpiw, rw, ltmprw)
+        work.cw, work.lencw, work.iw, work.leniw, work.rw, work.lenrw)
+
+    if INFO[1] != 104
+        @warn "error in snmema memory setting: ", INFO[1]
+    end
 
     # --- resize arrays to match memory requirements
-    lencw = mincw
-    resize!(cw,lencw[1]*8)
-    leniw = miniw
-    resize!(iw,leniw[1])
-    lenrw = minrw
-    resize!(rw,lenrw[1])
+    if mincw[1] > work.lencw
+        work.lencw = mincw[1]
+        resize!(work.cw, work.lencw*8)
+    end
+    if miniw[1] > work.leniw
+        work.leniw = miniw[1]
+        resize!(work.iw, work.leniw)
+    end
+    if minrw[1] > work.lenrw
+        work.lenrw = minrw[1]
+        resize!(work.rw, work.lenrw)
+    end
 
     memkey = ("Total character workspace", "Total integer   workspace",
         "Total real      workspace")
-    memvalue = (lencw,leniw,lenrw)
-    for (key,value) in zip(memkey,memvalue)
+    memvalue = (work.lencw, work.leniw, work.lenrw)
+    errors = Cint[0]
+    for (key,value) in zip(memkey, memvalue)
         buffer = string(key, repeat(" ", 55-length(key)))  # buffer length is 55 so pad with space.
         errors[1] = 0
         ccall( (:snseti_, snoptlib), Nothing,
-            (Ptr{UInt8}, Ref{Cint}, Ref{Cint}, Ref{Cint}, Ptr{Cint},
-            Ptr{UInt8}, Ref{Cint}, Ptr{Cint}, Ref{Cint}, Ptr{Cdouble}, Ref{Cint}),
-            buffer, value, iprint, isumm, errors,
-            cw, ltmpcw, iw, ltmpiw, rw, ltmprw)
+            (Ptr{Cuchar}, Ref{Cint}, Ref{Cint}, Ref{Cint}, Ptr{Cint},
+            Ptr{Cuchar}, Ref{Cint}, Ptr{Cint}, Ref{Cint}, Ptr{Cdouble}, Ref{Cint}),
+            buffer, value, PRINTNUM, SUMNUM, errors,
+            work.cw, work.lencw, work.iw, work.leniw, work.rw, work.lenrw)
+        if errors[1] > 0
+            @warn errors[1], " error encountered while lengths in options from memory sizing"
+        end
     end
 
+    return nothing
+end
+
+
+"""
+    f, fail = example!(g, df, dg, x, deriv)
+
+The expected function signature for user functions.
+
+# Arguments
+- `g::Vector{Float64}`: (output) constraint vector, modified in place
+- `df::Vector{Float64}`: (output) gradient vector, modified in place
+- `dg::Vector{Float64}`: (output) constraint jacobian vector, modified in place. 
+    dgi/dxj in order corresponding to sparsity pattern provided to snopt 
+    (preferably column major order if dense)
+- `x::Vector{Float64}`: (input) design variables, unmodified
+- `deriv::Bool`: (input) if false snopt does not need derivatives that iteration so you can skip their computation.
+
+# Returns
+- `f::Float64`: objective value
+- `fail::Bool`: true if function fails to compute at this x
+"""
+function example!(g, df, dg, x)
+    return 0.0, false
+end
+
+# wrapper for usrfun (augmented with function pass-in)
+function usrcallback(func!, status_::Ptr{Cint}, nx::Cint, x_::Ptr{Cdouble},
+    needf::Cint, nf::Cint, f_::Ptr{Cdouble}, needG::Cint, ng::Cint,
+    G_::Ptr{Cdouble}, cu::Ptr{Cuchar}, lencu::Cint, iu::Ptr{Cint},
+    leniu::Cint, ru::Ptr{Cdouble}, lenru::Cint)
+    
+    # check if solution finished, no need to calculate more
+    status = unsafe_load(status_)
+    if status >= 2
+        return
+    end
+
+    # unpack design variables
+    x = unsafe_wrap(Array, x_, nx)
+   
+    # set functions
+    f = unsafe_wrap(Array, f_, nf)
+    G = unsafe_wrap(Array, G_, ng)
+    f[1], fail = func!(@view(f[2:end]), @view(G[1:nx]), @view(G[nx+1:end]), x, needG > 0)
+
+    # check if solutions fails
+    if fail
+        unsafe_store!(status_, -1, 1)
+    end
+
+end
+
+# convenience function used internally to simplify passing in arguments associated with A (linear constraints).
+# automatically computes iAfun, jAvar, A, lenA, neA.
+function parseAmatrix(A)
+
+    if typeof(A) <: SparseMatrixCSC
+        # len = nnz(A)
+        rows, cols, values = findnz(A)
+        len = length(rows)
+        
+    else  # dense
+        if isempty(A)
+            len = 0
+            rows = [1]
+            cols = [1]
+            values = [0.0]
+        else
+            nf, nx = size(A)
+            len = nf*nx
+            rows = [i for i = 1:nf, j = 1:nx][:]
+            cols = [j for i = 1:nf, j = 1:nx][:]
+            values = A[:]
+        end
+    end
+
+    return len, rows, cols, values
+end
+
+
+# commonly used convenience method to provide regular starting point (cold start)
+function snopta(func!, x0::T, lx, ux, lg, ug, rows, cols, 
+    options=Dict(); A=[], names=Names(), objadd=0.0) where T<:Vector
+
+    start = ColdStart(x0, length(lg)+1)
+    
+    return snopta(func!, start, lx, ux, lg, ug, rows, cols, options, A=A, names=names, objadd=objadd)
+end
+
+"""
+    snopta(func!, x0, lx, ux, lg, ug, rows, cols, 
+        options=Dict(); A=[], names=Names(), objadd=0.0)
+
+Main function call into snOptA.
+
+# Arguments
+- `func!::function`: follows function signature shown in example!
+- `x0::Vector{Float64}` or `x0::WarmStart`: starting point
+- `lx::Vector{Float64}`: lower bounds on x
+- `ux::Vector{Float64}`: upper bounds on x
+- `lg::Vector{Float64}`: lower bounds on g
+- `ug::Vector{Float64}`: upper bounds on g
+- `rows::Vector{Int64}`: sparsity pattern for constraint jacobian.  dg[k] corresponds to rows[k], cols[k]
+- `cols::Vector{Int64}`: sparsity pattern for constraint jacobian.  dg[k] corresponds to rows[k], cols[k]
+- `options::Dict`: dictionary of options (see Snopt docs)
+- `A::Matrix` (if dense) or `SparseMatrixCSC`: linear constraints g += A*x
+- `names::Names`: custom names for problem and variables for print file
+- `objAdd::Float64`: adds a scalar to objective (see Snopt docs)
+
+# Returns
+- `xstar::Vector{Float64}`: optimal x
+- `fstar::Vector{Float64}`: corresponding f
+- `info::String`: termination message
+- `out::Outputs`: various outputs
+"""
+function snopta(func!, start::Start, lx, ux, lg, ug, rows, cols, 
+    options=Dict(); A=[], names=Names(), objadd=0.0)
+
+    # --- number of functions ----
+    nx = length(start.x)
+    ng = length(lg)
+    nf = 1 + length(lg)
+    lf = [0.0; lg]  # bounds on objective are irrelevant
+    uf = [0.0; ug]  
+   
+    # --- parse names -------
+    nxname = length(names.xnames)
+    if nxname != 1 && nxname != nx
+        @warn "incorrect length for xnames"
+        nxname = 1
+    end
+    nfname = length(names.fnames)
+    if nfname != 1 && nfname != nf
+        @warn "incorrect length for fnames"
+        nfname = 1
+    end
+    
+    if nxname == nx && nfname == nf
+        names = processnames(names) # TODO: prob not type stable if names are added
+    end
+    
+    # ---- parse linear constraints -------
+    lenA, iAfun, jAvar, Aval = parseAmatrix(A)
+    neA = lenA
+
+    # ----- setup user function ---------------
+    wrapper = function(status_::Ptr{Cint}, n::Cint, x_::Ptr{Cdouble},
+        needf::Cint, nF::Cint, f_::Ptr{Cdouble}, needG::Cint, lenG::Cint,
+        G_::Ptr{Cdouble}, cu::Ptr{Cuchar}, lencu::Cint, iu::Ptr{Cint},
+        leniu::Cint, ru::Ptr{Cdouble}, lenru::Cint)
+
+        usrcallback(func!, status_, n, x_, needf, nF, f_, needG, lenG,
+            G_, cu, lencu, iu, leniu, ru, lenru)
+
+        return nothing
+    end
+
+    # c wrapper to callback function
+    usrfun = @cfunction($wrapper, Cvoid, (Ptr{Cint}, Ref{Cint}, Ptr{Cdouble},
+        Ref{Cint}, Ref{Cint}, Ptr{Cdouble}, Ref{Cint}, Ref{Cint}, Ptr{Cdouble},
+        Ptr{Cuchar}, Ref{Cint}, Ptr{Cint}, Ref{Cint}, Ptr{Cdouble}, Ref{Cint}))
+
+
+    # ---- setup jacobian  sparsity pattern ------
+    nsp = length(rows)
+    lenG = nx + nsp
+    neG = lenG
+    iGfun = Array{Cint}(undef, lenG)
+    jGvar = Array{Cint}(undef, lenG)
+
+    objrow = 1 
+
+    # objective gradient (first row) assumed dense
+    iGfun[1:nx] .= 1
+    jGvar[1:nx] .= 1:nx
+
+    # constraint jacobian
+    for k = 1:nsp
+        iGfun[nx + k] = rows[k] + 1  # adding one for objective row
+        jGvar[nx + k] = cols[k]
+    end
+
+    # --- open files ------
+    printfile = "snopt-print.out"
+    sumfile = "snopt-summary.out"
+
+    if haskey(options, "Print file")
+        printfile = options["Print file"]
+    end
+    if haskey(options, "Summary file")
+        sumfile = options["Summary file"]
+    end
+    openfiles(printfile, sumfile)
+
+    # ----- initialize -------
+    work = sninit(nx, nf)
+
+    # --- set options ----
+    setoptions(options, work)
+
+    # ---- set memory requirements ------
+    INFO = Cint[0]
+    setmemory(INFO, nf, nx, nxname, nfname, neA, neG, work)
+
     # --- call snopta ----
+    mincw = Cint[0]
+    miniw = Cint[0]
+    minrw = Cint[0]
+    nInf = Cint[0]
+    sInf = Cdouble[0]
+    lencu = 1
+    cu = Array{Cuchar}(undef, lencu*8)
+    leniu = 1
+    iu = Cint[0]
+    lenru = 1
+    ru = [0.0]
+    ns = Cint[start.ns]
 
     ccall( (:snopta_, snoptlib), Nothing,
-        (Ref{Cint}, Ref{Cint}, Ref{Cint}, Ref{Cint}, Ref{Cint}, Ref{Cdouble},
-        Ref{Cint}, Ptr{UInt8}, Ptr{Nothing}, Ptr{Cint}, Ptr{Cint}, Ref{Cint},
-        Ref{Cint}, Ptr{Cdouble}, Ptr{Cint}, Ptr{Cint}, Ref{Cint}, Ref{Cint},
-        Ptr{Cdouble}, Ptr{Cdouble}, Ptr{UInt8}, Ptr{Cdouble}, Ptr{Cdouble},
-        Ptr{UInt8}, Ptr{Cdouble}, Ptr{Cint}, Ptr{Cdouble}, Ptr{Cdouble}, Ptr{Cint},
-        Ptr{Cdouble}, Ptr{Cint}, Ref{Cint}, Ref{Cint}, Ref{Cint}, Ptr{Cint},
-        Ptr{Cint}, Ptr{Cdouble}, Ptr{UInt8}, Ref{Cint}, Ptr{Cint}, Ref{Cint},
-        Ptr{Cdouble}, Ref{Cint}, Ptr{UInt8}, Ref{Cint}, Ptr{Cint}, Ref{Cint},
-        Ptr{Cdouble}, Ref{Cint}),
-        Start, nF, n, nxname, nFname, ObjAdd,
-        ObjRow, Prob, usrfun, iAfun, jAvar, lenA,
-        neA, A, iGfun, jGvar, lenG, neG,
-        xlow, xupp, xnames, Flow, Fupp,
-        Fnames, x, xstate, xmul, F, Fstate,
-        Fmul, INFO, mincw, miniw, minrw, nS,
-        nInf, sInf, cu, lencu, iu, leniu,
-        ru, lenru, cw, lencw, iw, leniw,
-        rw, lenrw)
+        (Ref{Cint}, Ref{Cint}, Ref{Cint}, Ref{Cint}, Ref{Cint}, 
+        Ref{Cdouble}, Ref{Cint}, Ptr{Cuchar}, Ptr{Nothing}, 
+        Ptr{Cint}, Ptr{Cint}, Ref{Cint}, Ref{Cint}, Ptr{Cdouble}, 
+        Ptr{Cint}, Ptr{Cint}, Ref{Cint}, Ref{Cint},
+        Ptr{Cdouble}, Ptr{Cdouble}, Ptr{Cuchar}, Ptr{Cdouble}, Ptr{Cdouble}, Ptr{Cuchar}, 
+        Ptr{Cdouble}, Ptr{Cint}, Ptr{Cdouble}, Ptr{Cdouble}, Ptr{Cint}, Ptr{Cdouble}, 
+        Ptr{Cint}, Ref{Cint}, Ref{Cint}, Ref{Cint}, 
+        Ptr{Cint}, Ptr{Cint}, Ptr{Cdouble}, 
+        Ptr{Cuchar}, Ref{Cint}, Ptr{Cint}, Ref{Cint}, Ptr{Cdouble}, Ref{Cint}, 
+        Ptr{Cuchar}, Ref{Cint}, Ptr{Cint}, Ref{Cint}, Ptr{Cdouble}, Ref{Cint}),
+        start.start, nf, nx, nxname, nfname, 
+        objadd, objrow, names.prob, usrfun, 
+        iAfun, jAvar, lenA, neA, Aval, 
+        iGfun, jGvar, lenG, neG,
+        lx, ux, names.xnames, lf, uf, names.fnames, 
+        start.x, start.xstate, start.xmul, start.f, start.fstate, start.fmul, 
+        INFO, mincw, miniw, minrw, 
+        ns, nInf, sInf, 
+        cu, lencu, iu, leniu, ru, lenru, 
+        work.cw, work.lencw, work.iw, work.leniw, work.rw, work.lenrw)
 
-    # println("done")
 
     # close output files
-    ccall( (:closefiles_, snoptlib), Nothing,
-        (Ref{Cint}, Ref{Cint}),
-        iprint, isumm)
+    closefiles()
 
+    # pack outputs
+    warm = WarmStart(ns[1], start.xstate, start.fstate, start.x, start.f, 
+    start.xmul, start.fmul)
 
-    return x, F[1], codes[INFO[1]]  # xstar, fstar, info
+    out = Outputs(start.f[2:end], work.iw[421], work.iw[422], work.rw[462], 
+        nInf[1], sInf[1], warm)
 
+    return start.x, start.f[1], codes[INFO[1]], out
 end
 
 
