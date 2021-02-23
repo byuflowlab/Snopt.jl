@@ -103,7 +103,7 @@ options = Dict(
     "Derivative option" => 0
 )
 
-xopt, fopt, info, out = snopta(barnes, x0, lx, ux, lg, ug, rows, cols, options=options)
+xopt, fopt, info, out = snopta(barnes, x0, lx, ux, lg, ug, rows, cols, options)
 @test isapprox(xopt[1], 49.5263; atol=1e-4)
 @test isapprox(xopt[2], 19.6228; atol=1e-4)
 @test isapprox(fopt, -31.6368; atol=1e-2)
@@ -212,7 +212,7 @@ options = Dict(
     "Verify level" => 1
 )
 
-xopt, fopt, info, out = snopta(barnesgrad, x0, lx, ux, lg, ug, rows, cols, options=options)
+xopt, fopt, info, out = snopta(barnesgrad, x0, lx, ux, lg, ug, rows, cols, options)
 
 @test isapprox(xopt[1], 49.5263; atol=1e-4)
 @test isapprox(xopt[2], 19.6228; atol=1e-4)
@@ -263,7 +263,7 @@ options = Dict(
 )
 
 
-xopt, fopt, info, out = snopta(sparsegrad, x0, lx, ux, lg, ug, rows, cols, options=options)
+xopt, fopt, info, out = snopta(sparsegrad, x0, lx, ux, lg, ug, rows, cols, options)
 
 @test isapprox(xopt[1], 1.0; atol=1e-6)
 @test isapprox(xopt[2], 2.0; atol=1e-6)
@@ -296,7 +296,7 @@ function sparsegrad2(g, df, dg, x, deriv)
 
 end
 
-xopt, fopt, info, out = snopta(sparsegrad2, x0, lx, ux, lg, ug, rows, cols, options=options)
+xopt, fopt, info, out = snopta(sparsegrad2, x0, lx, ux, lg, ug, rows, cols, options)
 
 @test isapprox(xopt[1], 1.5; atol=1e-6)
 @test isapprox(xopt[2], 3.0; atol=1e-6)
@@ -324,7 +324,7 @@ end # sparse test set
     options = Dict(
         "Derivative option" => 0
     )
-    xopt, fopt, info, out = snopta(matyas, x0, lx, ux, lg, ug, rows, cols, options=options)
+    xopt, fopt, info, out = snopta(matyas, x0, lx, ux, lg, ug, rows, cols, options)
     @test isapprox(xopt[1], 0.0; atol=1e-4)
     @test isapprox(xopt[2], 0.0; atol=1e-4)
     @test isapprox(fopt, 0.0; atol=1e-3)

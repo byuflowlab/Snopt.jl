@@ -435,26 +435,33 @@ function parseAmatrix(A)
 end
 
 
+# commonly used convenience method to provide regular starting point (cold start)
+function snopta(func!, x0::T, lx, ux, lg, ug, rows, cols, 
+    options=Dict(); A=[], names=Names(), objadd=0.0) where T<:Vector
+
+    start = ColdStart(x0, length(lg)+1)
+    
+    return snopta(func!, start, lx, ux, lg, ug, rows, cols, options, A=A, names=names, objadd=objadd)
+end
+
 """
-    snopta(func!, x0, lx, ux, lg, ug, rows, cols; 
-        A=[], options=Dict(), names=Names(), 
-        start=ColdStart(x0, length(lg)+1), objadd=0.0)
+    snopta(func!, x0, lx, ux, lg, ug, rows, cols, 
+        options=Dict(); A=[], names=Names(), objadd=0.0)
 
 Main function call into snOptA.
 
 # Arguments
 - `func!::function`: follows function signature shown in example!
-- `x0::Vector{Float64}`: starting point
+- `x0::Vector{Float64}` or `x0::WarmStart`: starting point
 - `lx::Vector{Float64}`: lower bounds on x
 - `ux::Vector{Float64}`: upper bounds on x
 - `lg::Vector{Float64}`: lower bounds on g
 - `ug::Vector{Float64}`: upper bounds on g
 - `rows::Vector{Int64}`: sparsity pattern for constraint jacobian.  dg[k] corresponds to rows[k], cols[k]
 - `cols::Vector{Int64}`: sparsity pattern for constraint jacobian.  dg[k] corresponds to rows[k], cols[k]
-- `A::Matrix (if dense) or SparseMatrixCSC`: linear constraints g += A*x
 - `options::Dict`: dictionary of options (see Snopt docs)
+- `A::Matrix` (if dense) or `SparseMatrixCSC`: linear constraints g += A*x
 - `names::Names`: custom names for problem and variables for print file
-- `start::Start`: allow for warm starts (default is cold start)
 - `objAdd::Float64`: adds a scalar to objective (see Snopt docs)
 
 # Returns
@@ -463,12 +470,11 @@ Main function call into snOptA.
 - `info::String`: termination message
 - `out::Outputs`: various outputs
 """
-function snopta(func!, x0, lx, ux, lg, ug, rows, cols; 
-    A=[], options=Dict(), names=Names(), 
-    start=ColdStart(x0, length(lg)+1), objadd=0.0)
+function snopta(func!, start::Start, lx, ux, lg, ug, rows, cols, 
+    options=Dict(); A=[], names=Names(), objadd=0.0)
 
-    # --- number of variables and functions ----
-    nx = length(x0)
+    # --- number of functions ----
+    nx = length(start.x)
     ng = length(lg)
     nf = 1 + length(lg)
     lf = [0.0; lg]  # bounds on objective are irrelevant

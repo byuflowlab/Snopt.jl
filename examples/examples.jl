@@ -18,7 +18,7 @@ cols = []
 options = Dict(
     "Derivative option" => 0
 )
-xopt, fopt, info, out = snopta(matyas, x0, lx, ux, lg, ug, rows, cols, options=options)
+xopt, fopt, info, out = snopta(matyas, x0, lx, ux, lg, ug, rows, cols, options)
 
 
 # ---- unconstrained, providing gradient -----
@@ -111,7 +111,7 @@ options = Dict(
     "Derivative option" => 0
 )
 
-xopt, fopt, info, out = snopta(barnes, x0, lx, ux, lg, ug, rows, cols, options=options)
+xopt, fopt, info, out = snopta(barnes, x0, lx, ux, lg, ug, rows, cols, options)
 
 
 
@@ -212,7 +212,7 @@ options = Dict(
     "Verify level" => 1
 )
 
-xopt, fopt, info, out = snopta(barnesgrad, x0, lx, ux, lg, ug, rows, cols, options=options)
+xopt, fopt, info, out = snopta(barnesgrad, x0, lx, ux, lg, ug, rows, cols, options)
 
 
 # ----- constrained, providing derivatives (sparse jacobian) ---------
@@ -254,7 +254,7 @@ options = Dict(
 )
 
 
-xopt, fopt, info, out = snopta(sparsegrad, x0, lx, ux, lg, ug, rows, cols, options=options)
+xopt, fopt, info, out = snopta(sparsegrad, x0, lx, ux, lg, ug, rows, cols, options)
 
 
 # ------- adding names in output file ------
@@ -287,11 +287,12 @@ options = Dict(
 )
 
 
-xopt, fopt, info, out = snopta(barnesgrad, x0, lx, ux, lg, ug, rows, cols, options=options) 
+xopt, fopt, info, out = snopta(barnesgrad, x0, lx, ux, lg, ug, rows, cols, options) 
 println("major iter = ", out.major_iter)
 
 # warm start from where we stopped
-xopt, fopt, info, out = snopta(barnesgrad, x0, lx, ux, lg, ug, rows, cols, start=out.warm) 
+warmstart = out.warm  # a WarmStart type
+xopt, fopt, info, out = snopta(barnesgrad, warmstart, lx, ux, lg, ug, rows, cols) 
 println("major iter = ", out.major_iter)
 
 
