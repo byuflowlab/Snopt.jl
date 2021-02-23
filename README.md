@@ -2,9 +2,11 @@
 
 Julia interface to SNOPT v7 (must obtain a licensed copy of SNOPT separately).
 
-This package is a basic wrapper to the Fortran functions. Rather than using this package directly, for most use cases we recommend using SNOW.jl, which provides a more convenient and unified interface to multiple optimizers.  However, this package can be used directly if desired. While we prioritize documentation for SNOW.jl, there are detailed docstrings for each function, and multiple examples in the example folder.
+**Note (v0.2)**: This is a breaking change compared to v0.1.  It was rewritten in order to expose all the inputs/outputs/functionality of snOptA.
 
-Note that v0.2 is a breaking change compared to v0.1.  It was rewritten to expose all the inputs/outputs/functionality of snOptA.
+This package is a basic wrapper to the Fortran functions. It follows the snopt functions, but with some conveniences in auto-populating sparsity patterns, vector lengths, making names the appropriate size, etc.
+
+As an alternative to using this package directly you may be interested in [SNOW.jl](https://github.com/byuflowlab/SNOW.jl).  SNOW provides a more convenient and unified interface to multiple optimizers (currently snopt and ipopt) as well as multiple differentiation packages (forwarddiff, reversediff, finitediff, sparsedifftools, etc.). Since we mainly use this package through SNOW.jl, documentation is prioritized over there, but for those interested in direct use there are detailed docstrings for each function, and multiple examples in the example folder.
 
 
 ### To Install
