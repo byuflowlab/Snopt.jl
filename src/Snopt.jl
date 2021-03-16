@@ -133,8 +133,8 @@ A cold start.
 function ColdStart(x0, nf)
     nx = length(x0)
     return Start(Cint(0), Cint(0),
-        zeros(Cint, nx), zeros(Cint, nx), 
-        x0, zeros(nf), zeros(nf), zeros(nf)
+        zeros(Cint, nx), zeros(Cint, nf), 
+        x0, zeros(nf), zeros(nx), zeros(nf)
         )
 end
 
