@@ -296,3 +296,31 @@ xopt, fopt, info, out = snopta(barnesgrad, warmstart, lx, ux, lg, ug, rows, cols
 println("major iter = ", out.major_iter)
 
 
+# -------- linear functions --------------
+
+
+function lp(g, df, dg, x, deriv)
+    f = 0.0  # no nonlinear component
+    g .= 0.0
+    df .= 0.0
+    fail = false
+
+    return f, fail
+end
+
+x0 = ones(10)
+lx = zeros(10)
+ux = 4*ones(10)
+lg = [5.0, 7, 1]
+ug = [8.0, Inf, 10.0] 
+rows = []
+cols = []
+
+A = [
+    0.46 0.54 0.40 0.39 0.49 0.03 0.66 0.26 0.05 0.60  # obj
+    0.56 0.84 0.23 0.48 0.05 0.69 0.87 0.85 0.88 0.62  # constraint 1
+    0.29 0.98 0.36 0.14 0.26 0.41 0.87 0.97 0.13 0.69  # constraint 2
+    0.48 0.55 0.78 0.59 0.79 0.84 0.01 0.77 0.13 0.10  # constraint 3
+]
+
+xopt, fopt, info, out = snopta(lp, x0, lx, ux, lg, ug, rows, cols, A=A)

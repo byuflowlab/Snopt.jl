@@ -413,20 +413,27 @@ function parseAmatrix(A)
 
     if typeof(A) <: SparseMatrixCSC
         # len = nnz(A)
-        rows, cols, values = findnz(A)
-        len = length(rows)
+        r, c, values = findnz(A)
+        len = length(r)
+        
+        rows = zeros(Cint, len)
+        rows .= r
+        cols = zeros(Cint, len)
+        cols .= c
         
     else  # dense
         if isempty(A)
             len = 0
-            rows = [1]
-            cols = [1]
+            rows = Int32[1]
+            cols = Int32[1]
             values = [0.0]
         else
             nf, nx = size(A)
             len = nf*nx
-            rows = [i for i = 1:nf, j = 1:nx][:]
-            cols = [j for i = 1:nf, j = 1:nx][:]
+            rows = zeros(Cint, nx*nf)
+            rows .= [i for i = 1:nf, j = 1:nx][:]
+            cols = zeros(Cint, nx*nf)
+            cols .= [j for i = 1:nf, j = 1:nx][:]
             values = A[:]
         end
     end
