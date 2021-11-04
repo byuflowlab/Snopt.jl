@@ -331,7 +331,8 @@ end # sparse test set
     @test info == "Finished successfully: optimality conditions satisfied"
 end
 
-# test to check options
+# -----------------------------------------
+
 @testset "files" begin
     function matyas(g, df, dg, x, deriv)
         f = 0.26 * (x[1]^2 + x[2]^2) - 0.48 * x[1] * x[2]
@@ -363,4 +364,5 @@ end
     # remove generated files
     rm(print_file)
     rm(summary_file)
-end
+    
+end # file generation test set
