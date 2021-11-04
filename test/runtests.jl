@@ -330,3 +330,37 @@ end # sparse test set
     @test isapprox(fopt, 0.0; atol=1e-3)
     @test info == "Finished successfully: optimality conditions satisfied"
 end
+
+# test to check options
+@testset "files" begin
+    function matyas(g, df, dg, x, deriv)
+        f = 0.26 * (x[1]^2 + x[2]^2) - 0.48 * x[1] * x[2]
+        fail = false
+        return f, fail
+    end
+    x0 = [5.0; 7]
+    lx = [-10.0; -10]
+    ux = [10.0; 10]
+    lg = []
+    ug = []
+    rows = []
+    cols = [] 
+
+    print_file = "snopt-print-test.out"
+    summary_file = "snopt-summary-test.out"
+   
+    options = Dict(
+        "Print file" => print_file,
+        "Summary file" => summary_file
+    )
+    
+    xopt, fopt, info, out = snopta(matyas, x0, lx, ux, lg, ug, rows, cols, options)
+
+    # test that files were properly generated
+    @test isfile(print_file)
+    @test isfile(summary_file)
+
+    # remove generated files
+    rm(print_file)
+    rm(summary_file)
+end
