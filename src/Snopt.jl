@@ -165,7 +165,7 @@ Workspace(lenc, leni, lenr) = Workspace(
 )
 
 """
-    Outputs(gstar, iterations, major_iter, run_time, nInf, sInf, warm)
+    Outputs(gstar, iterations, major_iter, run_time, nInf, sInf, warm, info_code)
 
 Outputs returned by the snopta function.
 
@@ -177,6 +177,7 @@ Outputs returned by the snopta function.
 - `nInf::Int`: number of infeasibility constraints, see snopta docs
 - `sInf::Float`: sum of infeasibility constraints, see snopta docs
 - `warm::WarmStart`: a warm start object that can be used in a restart.
+- `info_code::Int`: snopta `INFO` exit status code
 """
 struct Outputs{TF,TI,TW}
     gstar::Vector{TF}
@@ -186,6 +187,7 @@ struct Outputs{TF,TI,TW}
     nInf::TI
     sInf::TF
     warm::TW
+    info_code::TI
 end
 
 
@@ -611,7 +613,7 @@ function snopta(func!, start::Start, lx, ux, lg, ug, rows, cols,
     start.xmul, start.fmul)
 
     out = Outputs(start.f[2:end], work.iw[421], work.iw[422], work.rw[462], 
-        nInf[1], sInf[1], warm)
+        nInf[1], sInf[1], warm, INFO[1])
 
     return start.x, start.f[1], codes[INFO[1]], out
 end
