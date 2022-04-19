@@ -267,15 +267,19 @@ function setoptions(options, work)
         errors[1] = 0
 
         if typeof(value) == String
+            # snSet is intended for string containing both the key and value in the string, 
+            # not for when the value alone is a string. File names are handled separately
+            # for more information please see 
+            # https://web.stanford.edu/group/SOL/guides/sndoc7.pdf page 66 (sec 7.5).
 
-            value = string(value, repeat(" ", 72-length(value)))
-
-            ccall( (:snset_, snoptlib), Nothing,
-                (Ptr{Cuchar}, Ref{Cint}, Ref{Cint}, Ptr{Cint},
-                Ptr{Cuchar}, Ref{Cint}, Ptr{Cint}, Ref{Cint}, Ptr{Cdouble}, Ref{Cint}),
-                value, PRINTNUM, SUMNUM, errors,
-                work.cw, work.lencw, work.iw, work.leniw, work.rw, work.lenrw)
-
+            if key != "Print file" && key != "Summary file" 
+                value = string(value, repeat(" ", 72-length(value)))
+                ccall( (:snset_, snoptlib), Nothing,
+                    (Ptr{Cuchar}, Ref{Cint}, Ref{Cint}, Ptr{Cint},
+                    Ptr{Cuchar}, Ref{Cint}, Ptr{Cint}, Ref{Cint}, Ptr{Cdouble}, Ref{Cint}),
+                    value, PRINTNUM, SUMNUM, errors,
+                    work.cw, work.lencw, work.iw, work.leniw, work.rw, work.lenrw)
+            end
         elseif isinteger(value)
 
             ccall( (:snseti_, snoptlib), Nothing,
