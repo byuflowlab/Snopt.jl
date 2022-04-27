@@ -328,6 +328,10 @@ end # sparse test set
     @test isapprox(xopt[1], 0.0; atol=1e-4)
     @test isapprox(xopt[2], 0.0; atol=1e-4)
     @test isapprox(fopt, 0.0; atol=1e-3)
+
+    # Test that we got a successful info code.
+    @test out.info_code == 1
+
     @test info == "Finished successfully: optimality conditions satisfied"
 end
 
@@ -356,6 +360,9 @@ end
     )
     
     xopt, fopt, info, out = snopta(matyas, x0, lx, ux, lg, ug, rows, cols, options)
+
+    # Test that we got a successful info code.
+    @test out.info_code == 1
 
     # test that files were properly generated
     @test isfile(print_file)
