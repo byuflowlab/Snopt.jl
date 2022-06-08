@@ -9,14 +9,16 @@ This package is a basic wrapper to the Fortran functions. It follows the snopt f
 As an alternative to using this package directly you may be interested in [SNOW.jl](https://github.com/byuflowlab/SNOW.jl).  SNOW provides a more convenient and unified interface to multiple optimizers (currently snopt and ipopt) as well as multiple differentiation packages (forwarddiff, reversediff, finitediff, sparsedifftools, etc.). Since we mainly use this package through SNOW.jl, documentation is prioritized over there, but for those interested in direct use there are detailed docstrings for each function, and multiple examples in the example folder.
 
 
-### To Install
+## To Install
+
+### If you were provided with SNOPT source code
 
 1. Checkout the repo for development:
 ```julia
 (v1.0) pkg> dev https://github.com/byuflowlab/Snopt.jl.git
 ```
 
-2. Copy your SNOPT source files into ~/.julia/dev/Snopt/deps/src.
+2. Copy your SNOPT source files into `~/.julia/dev/Snopt/deps/src`
 
 3. You will need to make a couple of changes to subroutine sn02lib.f. Function snSet, snSeti, and snSetr require the following changes:
 
@@ -34,6 +36,22 @@ As an alternative to using this package directly you may be interested in [SNOW.
 ```julia
 (v1.0) pkg> build Snopt
 ```
+
+### If you were provided with a precompiled SNOPT binary
+
+1. Checkout the repo for development:
+```julia
+(v1.0) pkg> dev https://github.com/byuflowlab/Snopt.jl.git
+```
+
+2. Copy your SNOPT library into `~/.julia/dev/Snopt/deps/src` 
+
+3. Open the `Makefile` and uncomment the block that corresponds to your case in the **TODO** section. This depends if you want to link to the dynamic library (`libsnopt7.so` or `libsnopt.dylib`) or include the static library (`libsnopt7.a`). Because dynamic linking may require to export a `(DY)LD_LIBRARY_PATH`, we recommend the latter.
+
+4.  Compile the fortran code. This will compile the IO file that we provide, and link/include the precompiled library.
+```julia
+(v1.0) pkg> build Snopt
+``` 
 
 ## Run tests
 

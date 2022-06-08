@@ -11,15 +11,19 @@ LDFLAGS =
 VERSION_FOLDER =
 PRECOMPILED_SONPT =
 
-# ========== TODO: uncomment the following block depending on what you want to do. (Recommend either 1. or 3.)  ===============
-
-# # 1. You have the source files and you put them in a subdirecteory: VERSION_FOLDER. 
-# #    The following will compile the sources and create a dynamic lib with everything.
+# # By default, we assume the sources or binary of SNOPT will be put in the ./dep/src folder.
+# # If you want to put them in a subfolder instead (e.g., to maintain several versions), you can 
+# # specify a folder in which we will look for the sources/binary. For example:
 # VERSION_FOLDER = v7.7.5
 
-# # 2. You have SNOPT under the form of a dynamic lib (libsnopt7.dylib/libsnopt.so), and you put it in a subdirectory. 
+
+# ========== TODO: uncomment the following block depending on what you want to do.  ===============
+
+# # 0. DEFAULT: You have the source files. You don't need to do anything.  
+# #    The following will compile the sources and create a dynamic lib with everything.
+
+# # 1. You have SNOPT under the form of a dynamic lib (libsnopt7.dylib/libsnopt.so), and you put it in a subdirectory. 
 # #    The following will compile our IO sources and create a dynamic lib that links to the libsnopt7.
-# VERSION_FOLDER = v7.7.7
 # PRECOMPILED_SONPT = -lsnopt7
 # LDFLAGS = -Wl,-rpath,$(shell pwd)/$(VERSION_FOLDER)/ 
 # # Note:  you may have to run from the terminal, for linux:
@@ -28,9 +32,8 @@ PRECOMPILED_SONPT =
 # #        $ export DYLD_LIBRARY_PATH=${DYLD_LIBRARY_PATH}:/path/to/your/libsnopt7.dylib
 # # Note:  you may also need to add other rpaths indicating where the correct libgfortran is.
 
-# # 3. You have SNOPT under the form of a static lib (libsnopt7.a), and you put it in a subdirectory 
+# # 2. (RECOMMENDED OVER 1.) You have SNOPT under the form of a static lib (libsnopt7.a), and you put it in a subdirectory 
 # #    The following will compile our IO sources and create a dynamic lib that includes the content of the static archive (libsnopt7 is NOT a dependency in this case).
-# VERSION_FOLDER = v7.7.7
 # ifeq ($(SUFFIX),dylib)
 # # FOR MACOS:
 # LDFLAGS = -Wl,-force_load $(shell pwd)/$(VERSION_FOLDER)/libsnopt7.a
@@ -38,6 +41,7 @@ PRECOMPILED_SONPT =
 #  # FOR LINUX:
 # LDFLAGS = -Wl,--whole-archive $(shell pwd)/$(VERSION_FOLDER)/libsnopt7.a -Wl,--no-whole-archive 
 # endif
+
 # ==============================================================================================
 
 
