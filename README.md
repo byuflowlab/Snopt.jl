@@ -46,9 +46,14 @@ As an alternative to using this package directly you may be interested in [SNOW.
 
 2. Copy your SNOPT library into `~/.julia/dev/Snopt/deps/src` 
 
-3. Open the `Makefile` and uncomment the block that corresponds to your case in the **TODO** section. This depends if you want to link to the dynamic library (`libsnopt7.so` or `libsnopt.dylib`) or include the static library (`libsnopt7.a`). Because dynamic linking may require to export a `(DY)LD_LIBRARY_PATH`, we recommend the latter.
+3. Make sure the library has the correct permissions by doing, for example
+```
+$ chmod 755 ~/.julia/dev/Snopt/deps/src/libsnopt.so
+```
 
-4.  Compile the fortran code. This will compile the IO file that we provide, and link/include the precompiled library.
+4. Open the `Makefile` and uncomment the block that corresponds to your case in the **TODO** section. This depends if you want to link to the dynamic library (`libsnopt7.so` or `libsnopt.dylib`) or include the static library (`libsnopt7.a`). Because dynamic linking may require to export a `(DY)LD_LIBRARY_PATH`, we recommend the latter.
+
+5.  Compile the fortran code. This will compile the IO file that we provide, and link/include the precompiled library.
 ```julia
 (v1.0) pkg> build Snopt
 ``` 
