@@ -1,7 +1,7 @@
 name = "Snopt"
 uuid = "0e9dc826-d618-11e8-1f57-c34e87fde2c0"
 authors = ["Andrew Ning <aning@byu.edu> and contributors"]
-version = "0.2.2"
+version = "0.2.3"
 
 [deps]
 SparseArrays = "2f01184e-e22b-5df5-ae63-d93ebab69eaf"
