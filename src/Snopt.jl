@@ -382,12 +382,14 @@ The expected function signature for user functions.
 - `f::Float64`: objective value
 - `fail::Bool`: true if function fails to compute at this x
 """
-function example!(g, df, dg, x)
+function example!(g, df, dg, x, deriv)
     return 0.0, false
 end
 
+global userfunction! = example!
+
 # wrapper for usrfun (augmented with function pass-in)
-function usrcallback(func!, status_::Ptr{Cint}, nx::Cint, x_::Ptr{Cdouble},
+function usrcallback(status_::Ptr{Cint}, nx::Cint, x_::Ptr{Cdouble},
     needf::Cint, nf::Cint, f_::Ptr{Cdouble}, needG::Cint, ng::Cint,
     G_::Ptr{Cdouble}, cu::Ptr{Cuchar}, lencu::Cint, iu::Ptr{Cint},
     leniu::Cint, ru::Ptr{Cdouble}, lenru::Cint)
@@ -404,7 +406,7 @@ function usrcallback(func!, status_::Ptr{Cint}, nx::Cint, x_::Ptr{Cdouble},
     # set functions
     f = unsafe_wrap(Array, f_, nf)
     G = unsafe_wrap(Array, G_, ng)
-    f[1], fail = func!(@view(f[2:end]), @view(G[1:nx]), @view(G[nx+1:end]), x, needG > 0)
+    f[1], fail = userfunction!(@view(f[2:end]), @view(G[1:nx]), @view(G[nx+1:end]), x, needG > 0)
 
     # check if solutions fails
     if fail
@@ -492,6 +494,7 @@ function snopta(func!, start::Start, lx, ux, lg, ug, rows, cols,
     nf = 1 + length(lg)
     lf = [0.0; lg]  # bounds on objective are irrelevant
     uf = [0.0; ug]  
+    global userfunction! = func!
    
     # --- parse names -------
     nxname = length(names.xnames)
@@ -514,19 +517,8 @@ function snopta(func!, start::Start, lx, ux, lg, ug, rows, cols,
     neA = lenA
 
     # ----- setup user function ---------------
-    wrapper = function(status_::Ptr{Cint}, n::Cint, x_::Ptr{Cdouble},
-        needf::Cint, nF::Cint, f_::Ptr{Cdouble}, needG::Cint, lenG::Cint,
-        G_::Ptr{Cdouble}, cu::Ptr{Cuchar}, lencu::Cint, iu::Ptr{Cint},
-        leniu::Cint, ru::Ptr{Cdouble}, lenru::Cint)
-
-        usrcallback(func!, status_, n, x_, needf, nF, f_, needG, lenG,
-            G_, cu, lencu, iu, leniu, ru, lenru)
-
-        return nothing
-    end
-
     # c wrapper to callback function
-    usrfun = @cfunction($wrapper, Cvoid, (Ptr{Cint}, Ref{Cint}, Ptr{Cdouble},
+    usrfun = @cfunction(usrcallback, Cvoid, (Ptr{Cint}, Ref{Cint}, Ptr{Cdouble},
         Ref{Cint}, Ref{Cint}, Ptr{Cdouble}, Ref{Cint}, Ref{Cint}, Ptr{Cdouble},
         Ptr{Cuchar}, Ref{Cint}, Ptr{Cint}, Ref{Cint}, Ptr{Cdouble}, Ref{Cint}))
 
