@@ -35,7 +35,7 @@ As an alternative to using this package directly you may be interested in [SNOW.
 
 **Note for ARM architectures (e.g., new macs)**
 
-The ARM architecture does not yet support closures for C callbacks (see https://github.com/JuliaLang/julia/issues/27174).  My temporary solution is a global variable.  In lines 518 you would comment out wrapper (i.e., the closure) and instead in line 530 just directly pass in usrcallback (don't include the dollar sign $).  In line 390 you would remove the first argument to usrcallback since the function is no longer being passed in.  Then somewhere in the snopta function (starting at 486) you would assign the passed in variable func! to a global variable and whatever variable name you chose you would use as the function call in line 407.  
+The ARM architecture does not yet support closures for C callbacks (see https://github.com/JuliaLang/julia/issues/27174).  A temporary workaround is in the "arm" branch.
 
 ## Run tests
 
