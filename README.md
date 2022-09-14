@@ -2,8 +2,6 @@
 
 Julia interface to SNOPT v7 (must obtain a licensed copy of SNOPT separately).
 
-**Note (v0.2)**: This is a breaking change compared to v0.1.  It was rewritten in order to expose all the inputs/outputs/functionality of snOptA.
-
 This package is a basic wrapper to the Fortran functions. It follows the snopt functions, but with some conveniences in auto-populating sparsity patterns, vector lengths, making names the appropriate size, etc.
 
 As an alternative to using this package directly you may be interested in [SNOW.jl](https://github.com/byuflowlab/SNOW.jl).  SNOW provides a more convenient and unified interface to multiple optimizers (currently snopt and ipopt) as well as multiple differentiation packages (forwarddiff, reversediff, finitediff, sparsedifftools, etc.). Since we mainly use this package through SNOW.jl, documentation is prioritized over there, but for those interested in direct use there are detailed docstrings for each function, and multiple examples in the example folder.
@@ -37,7 +35,7 @@ As an alternative to using this package directly you may be interested in [SNOW.
 
 **Note for ARM architectures (e.g., new macs)**
 
-The ARM architecture does not yet support closures for C callbacks (see https://github.com/JuliaLang/julia/issues/27174).  My temporary solution is a global variable.  In lines 518 you would comment out wrapper (i.e., the closure) and instead in line 530 just directly pass in usrcallback.  In line 390 you would remove the first argument to usrcallback since the function is no longer being passed in.  Then somewhere in the snopta function (starting at 486) you would assign the passed in variable func! to a global variable and whatever variable name you chose you would use as the function call in line 407.  
+The ARM architecture does not yet support closures for C callbacks (see https://github.com/JuliaLang/julia/issues/27174).  My temporary solution is a global variable.  In lines 518 you would comment out wrapper (i.e., the closure) and instead in line 530 just directly pass in usrcallback (don't include the dollar sign $).  In line 390 you would remove the first argument to usrcallback since the function is no longer being passed in.  Then somewhere in the snopta function (starting at 486) you would assign the passed in variable func! to a global variable and whatever variable name you chose you would use as the function call in line 407.  
 
 ## Run tests
 
