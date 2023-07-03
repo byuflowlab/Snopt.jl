@@ -10,5 +10,10 @@ if Sys.isunix()
         run(`make FC=gfortran SUFFIX=$suffix`)
     end
 else
-    error("windows currently unsupported")
+    suffix = "dll"
+    cd(joinpath(dirname(@__FILE__), "src"))
+    if isfile("libsnopt.$suffix")
+        rm("libsnopt.$suffix")
+    end
+    run(`mingw32-make FC=gfortran SUFFIX=$suffix`)
 end

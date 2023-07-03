@@ -3,7 +3,8 @@ LIB = snopt
 FFLAGS = -shared -O2 -fPIC -v
 SUFFIX = dylib
 
-OBJ = $(shell ls *.f *.f90)
+OBJ := $(wildcard *.f *.f90)
+$(info $$OBJ is [${OBJ}])
 
 all : lib$(LIB).$(SUFFIX)
 
@@ -12,5 +13,3 @@ lib$(LIB).$(SUFFIX) : $(OBJ)
 
 clean :
 	rm -f *.$(SUFFIX)
-
-# gfortran -shared -O2 *.f *.f90 -o libsnopt.dylib -fPIC -v
