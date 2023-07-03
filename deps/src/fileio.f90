@@ -8,7 +8,9 @@ subroutine openfiles(printnum, sumnum, printerr, sumerr, printfile, sumfile)
     integer, intent(out) :: printerr, sumerr
 
     open(printnum, file=printfile, action='write', status='replace', iostat=printerr)
-    open(sumnum, file=sumfile, action='write', status='replace', iostat=sumerr)
+    if (sumnum /= 6 .and. sumnum > 0) then
+        open(sumnum, file=sumfile, action='write', status='replace', iostat=sumerr)
+    end if
 
 
 end subroutine
@@ -20,7 +22,9 @@ subroutine closefiles(printnum, sumnum)
     integer, intent(in) :: printnum, sumnum
 
     close(printnum)
-    close(sumnum)
+    if (sumnum /= 6 .and. sumnum > 0) then
+        close(sumnum)
+    end if
 
 end subroutine
 
@@ -31,6 +35,8 @@ subroutine flushfiles(printnum, sumnum)
     integer, intent(in) :: printnum, sumnum
 
     flush(printnum)
-    flush(sumnum)
+    if (sumnum /= 6 .and. sumnum > 0) then
+        flush(sumnum)
+    end if
 
 end subroutine

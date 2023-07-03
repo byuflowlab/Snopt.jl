@@ -42,7 +42,7 @@ const codes = Dict(
 )
 
 const PRINTNUM = 18
-const SUMNUM = 19
+const SUMNUM = 6
 
 
 """
@@ -204,7 +204,7 @@ function sninit(nx, nf)
     ccall( (:sninit_, snoptlib), Nothing,
         (Ref{Cint}, Ref{Cint}, Ptr{Cuchar}, Ref{Cint}, Ptr{Cint},
         Ref{Cint}, Ptr{Cdouble}, Ref{Cint}),
-        PRINTNUM, SUMNUM, w.cw, w.lencw, w.iw,
+        PRINTNUM, 6, w.cw, w.lencw, w.iw,
         w.leniw, w.rw, w.lenrw)
 
     return w
@@ -213,7 +213,6 @@ end
 
 # wrapper for openfiles. not defined with snopt, fortran file supplied in repo (from pyoptsparse)
 function openfiles(printfile, sumfile)
-
     # open files for printing (not part of snopt distribution)
     printerr = Cint[0]
     sumerr = Cint[0]
