@@ -92,6 +92,9 @@ function snopta(func!, start::Start, ObjAdd, ObjRow, iAfun, jAvar, A, iGfun, jGv
         nfname = 1
     end
 
+    # --- process names into fortran format ---
+    sn_names = processnames(names)
+
     # A matrix requirements
     lenA    = length(A) 
     neA     = lenA
@@ -164,10 +167,10 @@ function snopta(func!, start::Start, ObjAdd, ObjRow, iAfun, jAvar, A, iGfun, jGv
     ns    = Cint[start.ns]
 
     snopta!(start.start, nF, n, nxname, nfname,
-            ObjAdd, ObjRow, names.prob, usrfun,
+            ObjAdd, ObjRow, sn_names.prob, usrfun,
             iAfun_c, jAvar_c, lenA, neA, A,
             iGfun_c, jGvar_c, lenG, neG,
-            xlow, xupp, names.xnames, Flow, Fupp, names.fnames,
+            xlow, xupp, sn_names.xnames, Flow, Fupp, sn_names.fnames,
             start.x, start.xstate, start.xmul, start.f, start.fstate, start.fmul,
             INFO, mincw, miniw, minrw,
             ns, nInf, sInf,

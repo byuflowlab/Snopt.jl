@@ -1,7 +1,6 @@
 module Snopt
 
 using SparseArrays
-using Infiltrator
 
 export snsolve, snopta
 export ColdStart, WarmStart
@@ -19,6 +18,7 @@ include("utils.jl")
 include("sparse.jl")
 
 # Types
+include("Names.jl")
 include("Start.jl")
 include("Workspace.jl")
 include("Outputs.jl")

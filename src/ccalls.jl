@@ -173,13 +173,13 @@ function snopta!(Start::Cint,
                  nF::Integer, n::Integer,
                  nxname::Integer, nFname::Integer,
                  ObjAdd::Float64, ObjRow::Integer, 
-                 Prob::String, usrfun::Base.CFunction,
-                 iAfun::Vector{Cint}, jAvar::Vector{Cint}, 
+                 Prob::Vector{Cuchar}, usrfun::Base.CFunction,
+                 iAfun::Vector{IT1}, jAvar::Vector{IT2}, 
                  lenA::Integer, neA::Integer, A::Vector{Float64},
                  iGfun::Vector{Cint}, jGvar::Vector{Cint}, 
                  lenG::Integer, neG::Integer,
-                 xlow::Vector{Float64}, xupp::Vector{Float64}, xnames::Vector{String}, 
-                 Flow::Vector{Float64}, Fupp::Vector{Float64}, Fnames::Vector{String},
+                 xlow::Vector{Float64}, xupp::Vector{Float64}, xnames::Vector{Cuchar}, 
+                 Flow::Vector{Float64}, Fupp::Vector{Float64}, Fnames::Vector{Cuchar},
                  x::Vector{Float64}, xstate::Vector{Cint}, xmul::Vector{Float64}, 
                  F::Vector{Float64}, Fstate::Vector{Cint}, Fmul::Vector{Float64},
                  INFO::Vector{Cint}, 
@@ -190,7 +190,7 @@ function snopta!(Start::Cint,
                  ru::Vector{Float64}, lenru::Integer,
                  cw::Vector{Cuchar}, lencw::Integer, 
                  iw::Vector{Cint}, leniw::Integer, 
-                 rw::Vector{Float64}, lenrw::Integer)
+                 rw::Vector{Float64}, lenrw::Integer) where {IT1<:Integer, IT2<:Integer}
 
     ccall( (:snopta_, snoptlib), Nothing,
         (Ref{Cint}, Ref{Cint}, Ref{Cint}, Ref{Cint}, Ref{Cint}, 
@@ -213,4 +213,5 @@ function snopta!(Start::Cint,
         ns, nInf, sInf, 
         cu, lencu, iu, leniu, ru, lenru, 
         cw, lencw, iw, leniw, rw, lenrw)
+    return nothing
 end

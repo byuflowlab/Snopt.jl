@@ -104,9 +104,8 @@ function snsolve(func!, start::Start, lx, ux, lg, ug, rows, cols,
         nfname = 1
     end
     
-    if nxname == nx && nfname == nf
-        names = processnames(names) # TODO: prob not type stable if names are added
-    end
+    # --- process names into fortran format ------
+    sn_names = processnames(names)
     
     # ---- parse linear constraints -------
     lenA, iAfun, jAvar, Aval = parseMatrix(A)
@@ -183,12 +182,11 @@ function snsolve(func!, start::Start, lx, ux, lg, ug, rows, cols,
     lenru = 1
     ru = [0.0]
     ns = Cint[start.ns]
-    @infiltrate
     snopta!(start.start, nf, nx, nxname, nfname, 
-            objadd, objrow, names.prob, usrfun, 
+            objadd, objrow, sn_names.prob, usrfun, 
             iAfun, jAvar, lenA, neA, Aval, 
             iGfun, jGvar, lenG, neG,
-            lx, ux, names.xnames, lf, uf, names.fnames, 
+            lx, ux, sn_names.xnames, lf, uf, sn_names.fnames, 
             start.x, start.xstate, start.xmul, start.f, start.fstate, start.fmul, 
             INFO, mincw, miniw, minrw, 
             ns, nInf, sInf, 

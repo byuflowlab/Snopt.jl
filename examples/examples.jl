@@ -1,6 +1,5 @@
 using Snopt
 using SparseArrays
-using Infiltrator
 
 # ---- unconstrained, no dervatives provided. -----
 

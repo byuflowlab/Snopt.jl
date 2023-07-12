@@ -4,7 +4,6 @@ authors = ["Andrew Ning <aning@byu.edu> and contributors"]
 version = "0.2.3"
 
 [deps]
-Infiltrator = "5903a43b-9cc3-4c30-8d17-598619ec4e9b"
 SparseArrays = "2f01184e-e22b-5df5-ae63-d93ebab69eaf"
 
 [compat]

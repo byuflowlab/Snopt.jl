@@ -34,26 +34,6 @@ const codes = Dict(
     142 => "System error: error in basis package"
 )
 
-"""
-    Names(prob, xnames, fnames)
-
-Convenience to put custom names in output files.
-Arguments to variables of same names in snOptA. 
-Use strings and vectors of strings.
-"""
-struct Names{TS}
-    prob::TS
-    xnames::Vector{TS}
-    fnames::Vector{TS}
-end
-
-"""
-    Names()
-
-Default names (uses snopt defaults for xnames, fnames)
-"""
-Names() = Names("Opt Prob", [""], [""])
-
 # Internal: truncater or pad string to 8 characters
 function eightchar(name)
     n = length(name)

@@ -1,8 +1,6 @@
 using Snopt
 using Test
 using SparseArrays
-using Infiltrator
-
 
 # -----------------------------------------
 Snopt.SUMNUM = 18
