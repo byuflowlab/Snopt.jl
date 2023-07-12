@@ -30,10 +30,6 @@ This package is a basic wrapper to the Fortran functions. It follows the snopt f
 (v1.0) pkg> build Snopt
 ```
 
-**Note for ARM architectures (e.g., new macs)**
-
-The ARM architecture does not yet support closures for C callbacks (see https://github.com/JuliaLang/julia/issues/27174).  A temporary workaround is in the "arm" branch.
-
 ## Run tests
 
 ```julia
