@@ -5,7 +5,8 @@ using SparseArrays
 export snsolve, snopta
 export ColdStart, WarmStart
 
-const snoptlib = joinpath(dirname(@__FILE__), "../deps/src/libsnopt")
+const snoptlib = joinpath(@__DIR__, "..", "deps", "libsnopt")
+include_dependency(snoptlib)
 
 """
 Define global variables for print and summery file numbers.
