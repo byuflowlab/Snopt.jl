@@ -1,0 +1,6 @@
+{
+    "cmake.configureSettings" : {
+        "CMAKE_BUILD_TYPE": "${buildType}",
+        "CMAKE_INSTALL_LIBDIR": "${workspaceFolder}/lib"
+    }
+}

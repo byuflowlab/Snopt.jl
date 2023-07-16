@@ -27,8 +27,11 @@ else
     # Move into src directory
     cd(joinpath(@__DIR__, "src"))
 
+    # FC
+    FC = "C:\\Program Files (x86)\\Intel\\oneAPI\\compiler\\latest\\windows\\bin\\intel64\\ifort"
+
     # Build library
-    run(`mingw32-make FC=gfortran SUFFIX=$suffix`)
+    run(`mingw32-make FC=$FC SUFFIX=$suffix`)
 
     # Move library to deps directory
     mv("libsnopt.$suffix", joinpath(@__DIR__, "libsnopt.$suffix"))
