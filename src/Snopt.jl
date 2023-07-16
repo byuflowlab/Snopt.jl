@@ -5,7 +5,9 @@ using SparseArrays
 export snsolve, snopta
 export ColdStart, WarmStart
 
-const snoptlib = joinpath(@__DIR__, "..", "deps", "lib", "snopt")
+# Set path do snopt dynamic library
+const snoptlib = joinpath(@__DIR__, "..", "deps", "lib", 
+    Sys.isunix() ? "libsnopt" : "snopt")
 include_dependency(snoptlib)
 
 """

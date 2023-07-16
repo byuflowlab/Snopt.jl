@@ -18,7 +18,7 @@ install_dir = joinpath(@__DIR__, "lib")
 # Generator
 generator = ""
 if Sys.isunix()
-
+    generator = "Ninja"
 else
     if use_msvc
         generator = "Visual Studio $msvc_version $msvc_year"
