@@ -1,38 +1,37 @@
-if Sys.isunix()
-    # Get library suffix 
-    suffix = Sys.isapple() ? "dylib" : "so"
+# =====  Build options (would be nice to set these automatically or as arg to julia>]build )
+# Windows : MSVC (ifort) or GNU (gfortran)
+use_msvc     = true   # Set to false to use gfortran and MinGW
+msvc_version = "17"
+msvc_year    = "2022"
 
-    # Remove libsnopt.suffix if it exists
-    isfile("libsnopt.$suffix") && rm("libsnopt.$suffix")
-
-    # Move into src directory
-    cd(joinpath(@__DIR__, "src"))
-
-    # Build library
-    try
-        run(`make FC=ifort SUFFIX=$suffix`)
-    catch
-        run(`make FC=gfortran SUFFIX=$suffix`)
-    end
-
-    # Move library to deps directory
-    mv("libsnopt.$suffix", joinpath(@__DIR__, "libsnopt.$suffix"))
-else
-    # Set library suffic
-    suffix = "dll"
-
-    # Remove libsnopt.dll if it exists
-    isfile("libsnopt.$suffix") && rm("libsnopt.$suffix")
-
-    # Move into src directory
-    cd(joinpath(@__DIR__, "src"))
-
-    # FC
-    FC = "C:\\Program Files (x86)\\Intel\\oneAPI\\compiler\\latest\\windows\\bin\\intel64\\ifort"
-
-    # Build library
-    run(`mingw32-make FC=$FC SUFFIX=$suffix`)
-
-    # Move library to deps directory
-    mv("libsnopt.$suffix", joinpath(@__DIR__, "libsnopt.$suffix"))
+# ===== Remove old build directory
+if isdir(joinpath(@__DIR__, "build"))
+    rm(joinpath(@__DIR__, "build"); recursive=true, force=true)
 end
+mkdir(joinpath(@__DIR__, "build"))
+
+# ===== Define CMAKE configuration paths
+src_dir     = @__DIR__
+build_dir   = joinpath(@__DIR__, "build")
+install_dir = joinpath(@__DIR__, "lib")
+
+# Generator
+generator = ""
+if Sys.isunix()
+
+else
+    if use_msvc
+        generator = "Visual Studio $msvc_version $msvc_year"
+    else
+        generator = "MinGW Makefiles" 
+    end
+end
+
+# ===== Configuration
+run(`cmake --no-warn-unused-cli 
+        -DCMAKE_BUILD_TYPE=Release 
+        -DCMAKE_INSTALL_LIBDIR=$install_dir 
+        -S$src_dir -B$build_dir -G"$generator"`)
+
+# ===== Build
+run(`cmake --build $build_dir --config Release --target install`)
