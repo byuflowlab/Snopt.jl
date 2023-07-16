@@ -35,6 +35,7 @@ deps/src/*.f
 deps/src/*.f90
 deps/src/*.i
 deps/src/*.info
+!deps/src/fileio.f90
 
 # Julia
 Manifest.toml
