@@ -31,7 +31,10 @@
 
 # snopt
 fort*
-deps/src
+deps/src/*.f
+deps/src/*.f90
+deps/src/*.i
+deps/src/*.info
 
 # Julia
 Manifest.toml
