@@ -1,14 +1,21 @@
 # =====  Build options (would be nice to set these automatically or as arg to julia>]build )
+# CMake directory (set to full path if not in PATH)
+cmake_path  = "cmake"
+
 # Windows : MSVC (ifort) or GNU (gfortran)
-use_msvc     = true   # Set to false to use gfortran and MinGW
-msvc_version = "17"
-msvc_year    = "2022"
+win_use_msvc        = true     # Set to false to use gfortran and MinGW
+win_msvc_version    = "17"
+win_msvc_year       = "2022"
+
+# Unix : GNU (gfortran) or Intel (ifort)
+unix_use_gfortran   = true      # Set to false to use ifort
+unix_use_ninja      = true      # Set to false to use GNU make
 
 # BLAS
 use_BLAS     = true
 use_MKL      = true
-use_OPENBlas = false
-OPENBlas_DIR = joinpath("C:\\Source","OpenBLAS","install","share","cmake","OpenBLAS") 
+use_OpenBLAS = false
+OpenBLAS_DIR = joinpath("C:\\Source","OpenBLAS","install","share","cmake","OpenBLAS") 
 
 # ===== Remove old build directory
 if isdir(joinpath(@__DIR__, "build"))
@@ -24,26 +31,33 @@ install_dir = joinpath(@__DIR__, "lib")
 # Generator
 generator = ""
 if Sys.isunix()
-    generator = "Ninja"
+    if unix_use_ninja
+        generator = "Ninja"
+    else
+        generator = "Unix Makefiles"
+    end
 else
-    if use_msvc
-        generator = "Visual Studio $msvc_version $msvc_year"
+    if win_use_msvc
+        generator = "Visual Studio $win_msvc_version $win_msvc_year"
     else
         generator = "MinGW Makefiles" 
     end
 end
 
 # ===== Configuration
-run(`cmake --no-warn-unused-cli 
+boolToStr(x) = x ? "ON" : "OFF"
+cmd = `$cmake_path --no-warn-unused-cli 
         -DCMAKE_BUILD_TYPE=Release 
         -DCMAKE_INSTALL_PREFIX=$install_dir 
         -S $src_dir 
         -B $build_dir 
         -G "$generator"
-        -DUSE_EXTERNAL_BLAS=$(use_BLAS ? "ON" : "OFF")
-        -DUSE_MKL=$(use_MKL ? "ON" : "OFF")
-        -DUSE_OPENBLAS=$(use_OPENBlas ? "ON" : "OFF")
-        $(use_OPENBlas ? "-DOpenBLAS_DIR=$OPENBlas_DIR" : ())`)
+        -DUSE_EXTERNAL_BLAS=$(boolToStr(use_BLAS))
+        -DUSE_MKL=$(boolToStr(use_MKL))
+        -DUSE_OpenBLAS=$(boolToStr(use_OpenBLAS))
+        -DOpenBLAS_DIR=$OpenBLAS_DIR`
+run(cmd)
 
 # ===== Build
-run(`cmake --build $build_dir --config Release --target install -j $(Sys.CPU_THREADS)`)
+cmd  = `$cmake_path --build $build_dir --config Release --target install`
+run(cmd)
