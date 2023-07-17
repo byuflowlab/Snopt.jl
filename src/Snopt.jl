@@ -29,6 +29,7 @@ include("Outputs.jl")
 include("ccalls.jl")
 
 # SNOPT interfaces
+include("userfun.jl")
 include("snsolve.jl")
 include("snopta.jl")
 
