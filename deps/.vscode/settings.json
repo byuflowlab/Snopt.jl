@@ -1,6 +1,11 @@
 {
     "cmake.configureSettings" : {
-        "CMAKE_BUILD_TYPE": "${buildType}",
-        "CMAKE_INSTALL_LIBDIR": "${workspaceFolder}/lib"
+        "CMAKE_BUILD_TYPE"      : "${buildType}",
+        "CMAKE_INSTALL_PREFIX"  : "${workspaceFolder}/lib",
+        "USE_EXTERNAL_BLAS"     : "OFF",
+        "USE_MKL"               : "OFF",
+        "CMAKE_CC_COMPILER"     : "gcc",
+        "CMAKE_CXX_COMPILER"    : "g++",
+        "CMAKE_FC_COMPILER"     : "gfortran",
     }
 }

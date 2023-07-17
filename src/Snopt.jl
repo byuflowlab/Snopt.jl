@@ -6,8 +6,7 @@ export snsolve, snopta
 export ColdStart, WarmStart
 
 # Set path do snopt dynamic library
-const snoptlib = joinpath(@__DIR__, "..", "deps", "lib", 
-    Sys.isunix() ? "libsnopt" : "snopt")
+const snoptlib = joinpath(@__DIR__, "..", "deps", "lib", "libsnopt")
 include_dependency(snoptlib)
 
 """
