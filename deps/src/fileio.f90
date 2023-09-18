@@ -1,36 +1,32 @@
-subroutine openfiles(printnum, sumnum, printerr, sumerr, printfile, sumfile)
+subroutine openfile(funit, ferror, fname)
 
     ! inputs
-    integer, intent(in) :: printnum, sumnum
-    character*250, intent(in) :: printfile, sumfile
+    integer, intent(in) :: funit
+    character*250, intent(in) :: fname
 
     ! outputs
-    integer, intent(out) :: printerr, sumerr
+    integer, intent(out) :: ferror
 
-    open(printnum, file=printfile, action='write', status='replace', iostat=printerr)
-    open(sumnum, file=sumfile, action='write', status='replace', iostat=sumerr)
-
+    open(funit, file=fname, action='write', status='replace', iostat=ferror)
 
 end subroutine
 
 
-subroutine closefiles(printnum, sumnum)
+subroutine closefile(funit)
 
     ! inputs
-    integer, intent(in) :: printnum, sumnum
+    integer, intent(in) :: funit
 
-    close(printnum)
-    close(sumnum)
+    close(funit)
 
 end subroutine
 
 
-subroutine flushfiles(printnum, sumnum)
+subroutine flushfile(funit)
 
     ! inputs
-    integer, intent(in) :: printnum, sumnum
+    integer, intent(in) :: funit
 
-    flush(printnum)
-    flush(sumnum)
+    flush(funit)
 
 end subroutine
