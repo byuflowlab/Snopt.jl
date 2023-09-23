@@ -41,10 +41,44 @@ const codes = Dict(
 142 => "System error: error in basis package"
 )
 
-const PRINTNUM = 18
-const SUMNUM = 19
+# wrapper for get_stdout. this returns the output unit to allow printing to the terminal
+function get_stdout()
+    ccall((:SNOPT_get_stdout, snoptlib), Cint, ())
+end
 
+const PRINTNUM = Cint(18)
+const SUMNUM = Cint(19)
+const STDOUTNUM = get_stdout()
 
+"""
+    haskey_caseless(dict, key)
+
+Caseless implementation of haskey
+"""
+
+function haskey_caseless(dict::Dict, key::AbstractString)
+    for (k, _) in dict
+       if lowercase(k) == lowercase(key)
+          return true
+       end
+    end
+    return false
+end
+
+"""
+    get_caseless(dict, key, default = nothing)
+"""
+
+function get_caseless(dict::Dict, key::AbstractString, default = nothing)
+    key_lower = lowercase(key)
+    for (k, v) in dict
+        if lowercase(k) == key_lower
+            return v
+        end
+    end
+    return default
+end
+  
 """
     Names(prob, xnames, fnames)
 
@@ -209,8 +243,7 @@ function sninit(nx, nf, printunit, sumunit)
 
     return w
 end
-
-
+  
 # wrapper for openfiles. not defined with snopt, fortran file supplied in repo (from pyoptsparse)
 function openfiles(printfile, sumfile)
 
@@ -218,34 +251,45 @@ function openfiles(printfile, sumfile)
     printerr = Cint[0]
     sumerr = Cint[0]
 
-    if isempty(printfile)
-        printunit = 0
+    if isnothing(printfile)
+        printunit = Cint(0)
     else
-        ccall( (:openfile_, snoptlib), Nothing,
-            (Ref{Cint}, Ptr{Cint}, Ptr{Cuchar}),
-            PRINTNUM, printerr, printfile)
-        if printerr[1] != 0
-            @warn "failed to open print file"
-            printunit = 0
+        if isempty(printfile)
+            printunit = STDOUTNUM
         else
-            printunit = PRINTNUM
+            len_printfile = Cint(length(printfile))
+            ccall( (:SNOPT_openfile, snoptlib), Nothing,
+                (Ref{Cint}, Ptr{Cint}, Ptr{Cuchar}, Ref{Cint}),
+                PRINTNUM, printerr, printfile, len_printfile)
+            if printerr[1] != Cint(0)
+                @warn "failed to open print file"
+                printunit = Cint(0)
+            else
+                printunit = PRINTNUM
+            end
         end
     end
 
-    if isempty(sumfile)
-        sumunit = 0
+    if isnothing(sumfile)
+        sumunit = Cint(0)
     else
-        ccall( (:openfile_, snoptlib), Nothing,
-            (Ref{Cint}, Ptr{Cint}, Ptr{Cuchar}),
-            SUMNUM, sumerr, sumfile)
-        if sumerr[1] != 0
-            @warn "failed to open summary file"
-            sumunit = 0
+
+        if isempty(sumfile)
+            sumunit = STDOUTNUM
         else
-            sumunit = SUMNUM
+            len_sumfile = Cint(length(sumfile))
+            ccall( (:SNOPT_openfile, snoptlib), Nothing,
+                (Ref{Cint}, Ptr{Cint}, Ptr{Cuchar}, Ref{Cint}),
+                SUMNUM, sumerr, sumfile, len_sumfile)
+            if sumerr[1] != Cint(0)
+                @warn "failed to open summary file"
+                sumunit = Cint(0)
+            else
+                sumunit = SUMNUM
+            end
         end
     end
-
+    
     return (printunit, sumunit)
 end
 
@@ -253,12 +297,12 @@ end
 function closefiles(printunit, sumunit)
     # close output files
     if printunit > 0
-        ccall( (:closefile_, snoptlib), Nothing,
+        ccall( (:SNOPT_closefile, snoptlib), Nothing,
             (Ref{Cint},), printunit)
     end
 
     if sumunit > 0
-        ccall( (:closefile_, snoptlib), Nothing,
+        ccall( (:SNOPT_closefile, snoptlib), Nothing,
             (Ref{Cint},), sumunit)
     end
 
@@ -269,15 +313,15 @@ end
 function flushfiles(printunit, sumunit)
     # flush output files to see progress
     if printunit > 0
-        ccall( (:flushfiles_, snoptlib), Nothing,
+        ccall( (:SNOPT_flushfile, snoptlib), Nothing,
             (Ref{Cint},), printunit)
     end
 
     if sumunit > 0
-        ccall( (:flushfiles_, snoptlib), Nothing,
+        ccall( (:SNOPT_flushfile, snoptlib), Nothing,
             (Ref{Cint},), sumunit)
     end
-
+    
     return nothing
 end
 
@@ -288,7 +332,12 @@ function setoptions(options, work, printunit, sumunit)
     errors = Cint[0]
 
     for key in keys(options)
-        value = options[key]
+        
+        lower_key = lowercase(key)
+        value = get_caseless(options, key)
+        
+        isnothing(value) && continue
+
         buffer = string(key, repeat(" ", 55-length(key)))  # buffer length is 55 so pad with space.
 
         if length(key) > 55
@@ -304,7 +353,7 @@ function setoptions(options, work, printunit, sumunit)
             # for more information please see 
             # https://web.stanford.edu/group/SOL/guides/sndoc7.pdf page 66 (sec 7.5).
 
-            if key != "Print file" && key != "Summary file" 
+            if lower_key != "print file" && lower_key != "summary file" 
                 value = string(value, repeat(" ", 72-length(value)))
                 ccall( (:snset_, snoptlib), Nothing,
                     (Ptr{Cuchar}, Ref{Cint}, Ref{Cint}, Ptr{Cint},
@@ -584,11 +633,11 @@ function snopta(func!, start::Start, lx, ux, lg, ug, rows, cols,
     printfile = "snopt-print.out"
     sumfile = "snopt-summary.out"
 
-    if haskey(options, "Print file")
-        printfile = options["Print file"]
+    if haskey_caseless(options, "print file")
+        printfile = get_caseless(options, "print file")
     end
-    if haskey(options, "Summary file")
-        sumfile = options["Summary file"]
+    if haskey_caseless(options, "summary file")
+        sumfile = get_caseless(options, "summary file")
     end
 
     printunit, sumunit = openfiles(printfile, sumfile)
