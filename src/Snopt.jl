@@ -20,6 +20,7 @@ const codes = Dict(
 31 => "Resource limit error: iteration limit reached",
 32 => "Resource limit error: major iteration limit reached",
 33 => "Resource limit error: the superbasics limit is too small",
+34 => "Resource limit error: time limit reached",
 41 => "Terminated after numerical difficulties: current point cannot be improved",
 42 => "Terminated after numerical difficulties: singular basis",
 43 => "Terminated after numerical difficulties: cannot satisfy the general constraints",
