@@ -27,6 +27,7 @@ const codes = Dict(
 44 => "Terminated after numerical difficulties: ill-conditioned null-space basis",
 51 => "Error in the user-supplied functions: incorrect objective derivatives",
 52 => "Error in the user-supplied functions: incorrect constraint derivatives",
+56 => "Error in the user-supplied functions: irregular or badly scaled problem functions",
 61 => "Undefined user-supplied functions: undefined function at the first feasible point",
 62 => "Undefined user-supplied functions: undefined function at the initial point",
 63 => "Undefined user-supplied functions: unable to proceed into undefined region",
