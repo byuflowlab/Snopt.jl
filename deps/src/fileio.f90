@@ -1,36 +1,62 @@
-subroutine openfiles(printnum, sumnum, printerr, sumerr, printfile, sumfile)
+module SNOPT_Julia_c
 
-    ! inputs
-    integer, intent(in) :: printnum, sumnum
-    character*250, intent(in) :: printfile, sumfile
+    use iso_c_binding
+    use iso_fortran_env
 
-    ! outputs
-    integer, intent(out) :: printerr, sumerr
+    implicit none
 
-    open(printnum, file=printfile, action='write', status='replace', iostat=printerr)
-    open(sumnum, file=sumfile, action='write', status='replace', iostat=sumerr)
+    private :: copy_a2s
 
+contains
 
-end subroutine
+    subroutine openfile(funit, ferror, fname, len_fname) bind(C, name = "SNOPT_openfile")
 
+        ! inputs
+        integer(kind = c_int), intent(in) :: funit
+        character(kind = c_char), dimension(*), intent(in) :: fname
+        integer(kind = c_int), intent(in) :: len_fname
+        ! character*250, intent(in) :: fname
 
-subroutine closefiles(printnum, sumnum)
+        ! outputs
+        integer(kind = c_int), intent(out) :: ferror
 
-    ! inputs
-    integer, intent(in) :: printnum, sumnum
+        open(funit, file = copy_a2s(fname(1:len_fname)), action = 'write', status = 'replace', iostat = ferror)
 
-    close(printnum)
-    close(sumnum)
+    end subroutine
 
-end subroutine
+    function get_stdout() bind(C, name = "SNOPT_get_stdout")
+        ! output
+        integer(kind = c_int) :: get_stdout
+        get_stdout = output_unit
+    end function
 
+    subroutine closefile(funit) bind(C, name = "SNOPT_closefile")
 
-subroutine flushfiles(printnum, sumnum)
+        ! inputs
+        integer(kind = c_int), intent(in) :: funit
 
-    ! inputs
-    integer, intent(in) :: printnum, sumnum
+        close(funit)
 
-    flush(printnum)
-    flush(sumnum)
+    end subroutine
 
-end subroutine
+    subroutine flushfile(funit) bind(C, name = "SNOPT_flushfile")
+
+        ! inputs
+        integer(kind = c_int), intent(in) :: funit
+
+        flush(funit)
+
+    end subroutine
+
+    pure function copy_a2s(a) result(s)
+        character(kind = c_char), intent(in) :: a(:)
+        character(size(a)) :: s
+        integer :: i
+        s = ''
+        do i = 1, size(a)
+            if (a(i) == c_null_char) exit
+            s(i:i) = a(i)
+        end do
+    end function
+
+end module
